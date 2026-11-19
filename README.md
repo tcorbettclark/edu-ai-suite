@@ -1,12 +1,18 @@
 # edu-ai-suite
 
 A plain-Python teaching library for image features, tiny language models and LoRA
-fine-tuning. Each image feature turns a picture into one number - `mean_intensity`,
-`edge_density`, `coarse_texture` and `left_right_symmetry` among them - each language
-model is a tokenizer, an architecture and the weights that architecture fitted, and each
-LoRA adapter is a base model plus a small set of trained values stored beside it.
+fine-tuning, with Hugging Face assets: cloud photographs, digits, and an LLM small
+enough to fine-tune on a 16 GB Mac.
 
-## What is in the box
+- Each image feature turns a picture into one number, such as `mean_intensity`,
+  `edge_density`, `coarse_texture` and `left_right_symmetry`.
+- Each language model is a tokenizer and an architecture fitted to text, which then
+  generates more text.
+- Each LoRA run takes a pre-trained model and produces an adapter.
+
+Only the LoRA component needs MLX, and therefore Apple Silicon.
+
+## Contents
 
 - **`edu_ai_suite/images/`** - the image pipeline: `decode`, `resize`, `flatten` and
   `pixels`, and the `features` package built on them: one class per feature, the groups
@@ -23,8 +29,7 @@ LoRA adapter is a base model plus a small set of trained values stored beside it
 - **`examples/`** - one runnable script per subject, and a shell walkthrough of the LoRA
   scripts in the order a run happens.
 - **`tests/`** - the test suite, in plain Python.
-- **`GLOSSARY.md`** - the words the text and model code uses, one definition each:
-  tokenizer, token, context, pair, model, sampler.
+- **`GLOSSARY.md`** - definitions of key words.
 
 ## Installation
 
@@ -32,7 +37,7 @@ Requirements: Python 3.11+, and macOS on Apple Silicon for LoRA training.
 
 Everything except LoRA is a plain dependency: OpenCV for the image pipeline, Keras on a
 TensorFlow backend for the from-scratch language models. Only LoRA is an extra, because
-MLX runs on Apple Silicon alone:
+it uses MLX, which is specific to Apple Silicon.
 
 ```bash
 pip install edu-ai-suite            # everything but LoRA
@@ -51,35 +56,34 @@ uv build
 
 ### Language models
 
-A runnable end-to-end script lives in `examples/lm_from_scratch.py`
-(`uv run python examples/lm_from_scratch.py`); the essentials are:
+A minimal example showing how to train and run a small LLM.
 
 ```python
 import edu_ai_suite.lm as lm
 
-text = "\n".join(texts)  # join documents outside this package
+text = """...a few thousand lines of normal English text..."""
+held_out_text = """...different text, which the model never trains on..."""
+
+# The tokenizer is built once and travels inside the model.
 tokenizer = lm.tokenizer_from_text(text, "char")
 tokenizer = tokenizer.keep_top(2000)  # or .drop_rare(min_count=3); pure, chainable
-stream = tokenizer.encode(text)  # every sentence ends with <eos>
-pairs = lm.make_pairs(stream, context_width=16)
-train, valid = pairs.split(validation_fraction=0.1, seed=0)
 
-# An architecture is the recipe; a model is that recipe fitted.
+# An architecture is the recipe; a model is that recipe fitted. MLP is a
+# scikit-learn estimator, so get_params() lists its settings.
 architecture = lm.MLP(context_width=16, embedding_dim=32, hidden_units=128)
 model = lm.LanguageModel(architecture, tokenizer).fit(
     text,
     lm.TrainingOptions(epochs=15, validation_fraction=0.1, seed=0),
 )
 
+# fit builds pairs at the architecture's context width and splits by
+# TrainingOptions.validation_fraction, so the data and the weights cannot disagree.
+
+# Generate some text, evaluate on held out text, and save the model.
 model.generate("the ", temperature=0.8, max_new_tokens=64)
 model.evaluate(held_out_text)  # {'loss': ..., 'perplexity': ...}; perplexity = e^loss
 model.save("my-model")  # weights + tokenizer + metadata
 ```
-
-`fit` returns the model, so the call can be chained; it builds pairs at
-`architecture.context_width`, so the data and the weights cannot disagree.
-`LanguageModel.load(path)` reads the directory back as one object. The training hook
-(`on_epoch`) and the stop callback (`stop_requested`) are plain Python callables.
 
 ### LoRA
 
@@ -229,42 +233,6 @@ The same interface is available as `python -m edu_ai_suite.assets`.
   `bash examples/lora_walkthrough.sh`.
 
 The LoRA scripts run with the extra: `uv run --extra lora python examples/lora_train.py`.
-
-## Layout
-
-```
-edu_ai_suite/
-  __init__.py
-  _holdout.py       which positions a validation split holds out (shared)
-  images/           image data: decoded, resampled, then measured
-    decode.py         RGB/luma, alpha and [0,1] conventions (shared)
-    resize.py         one resampling policy: area shrinking, bilinear growing
-    flatten.py        a grid as one row, with a coordinate name per cell
-    pixels.py         the deliberately plain baseline: a grid, flattened
-    features/         the feature package
-      catalogue/        one module and one class per feature, plus the index
-      description.py    the four descriptions, checked when a feature is created
-      feature.py        the feature contract, checked at import
-      guide.py          the whole catalogue as one generated Markdown page
-      groups.py         groups as membership lists over the catalogue
-      extraction.py     extract_features and FeatureVector
-      options.py        FeatureOptions
-      _preprocessing.py  the pipeline (support code)
-      _conventions.py   numeric rules (zero, flat, net change)
-      _measurements.py  measurements shared by more than one feature
-  lm/               tokenizer (with its stats), pairs, architectures,
-                    training options/results, LanguageModel with embedded tokenizer
-  lora/             LoRA options, data, split, the run, and the artifact/model objects
-    mlx_*             the boundary, marked by the prefix: mlx-lm's files, its wire
-                      format, its child process and its in-process runtime
-  text/             plain text into training rows, behind one facade
-    _clean.py         raw text -> clean text (Gutenberg, page numbers, reflow)
-    _split.py         clean text -> table rows (whole file, paragraph, sentence)
-    _qa.py            clean text -> Q/A prompt/completion pairs
-  assets/           Hugging Face assets: download cache policy, prepare, registry, CLI
-examples/           one runnable script per subject
-tests/              the test suite; test_lm/ and test_lora/ per domain
-```
 
 ## License
 
