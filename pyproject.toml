@@ -62,7 +62,8 @@ filterwarnings = [
 
 [tool.release]
 smoke = "from edu_ai_suite.images import features; print(len(features.all_feature_names()), 'features')"
-tests = [["uv", "run", "pytest"]]
+tests = [["uv", "run", "--extra", "lora", "pytest"]]
+slow = [["uv", "run", "--extra", "lora", "pytest", "-m", "slow"]]
 
 [tool.ruff]
 target-version = "py311"
