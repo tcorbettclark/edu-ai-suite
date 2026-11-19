@@ -60,6 +60,10 @@ filterwarnings = [
     "ignore::DeprecationWarning:keras.*",
 ]
 
+[tool.release]
+smoke = "from edu_ai_suite.images import features; print(len(features.all_feature_names()), 'features')"
+tests = [["uv", "run", "pytest"]]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
