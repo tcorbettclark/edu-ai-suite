@@ -1,110 +1,293 @@
-"""Print the image features, and their catalogue, for three cloud photographs.
+"""Describe cloud photographs with interpretable image features, one cell at a time.
 
-Run it from the repository root with ``uv run python examples/image_features.py``. The
-photographs are real skies from the CCSN database (CC0), credited in
-``examples/CREDITS.md``, and nothing here needs a GUI.
+The notebook shows the pipeline from pixels to a feature row, the catalogue and its
+groups, extraction, a feature's description, ablation, and the generated guide.
 """
 
-from pathlib import Path
+import marimo
 
-import cv2
-import numpy as np
-
-import edu_ai_suite.images.features as features
-
-HERE = Path(__file__).parent
+__generated_with = "0.25.2"
+app = marimo.App(width="medium")
 
 
-def load(name: str) -> np.ndarray:
-    """Read one of the photographs in this directory as an RGB array.
+@app.cell
+def _():
+    import marimo as mo
 
-    The decoder reads RGB and never guesses channel order.
-    """
-    bgr = cv2.imread(str(HERE / name))
-    if bgr is None:
-        raise SystemExit(f"cannot read {HERE / name}")
-    return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    return (mo,)
 
 
-CIRRUS = load("cirrus.jpg")  # wispy streaks, high cloud
-VOLUTUS = load("volutus.jpg")  # a stratocumulus layer
-LOW_CLOUD = load("low_cloud.jpg")  # a low cumulus layer
+@app.cell
+def _(mo):
+    mo.md("""
+    # Image features
 
-# 1. The catalogue is the whole feature set: one class per feature, in column
-#    order, each carrying the sentence a person reads to understand the number.
-print(
-    f"catalogue   {len(features.all_feature_names())} features in {len(features.all_groups())} groups"
-)
-for group in features.all_groups():
-    print(f"  {group.letter}  {len(group.members):2d}  {group.title}")
+    Each feature turns one picture into one number. This notebook loads three
+    cloud photographs, shows the pixel pipeline they share, and then reads the
+    feature catalogue in groups.
+    """)
+    return
 
-print("\n  every feature is a class, and its description is the documentation:")
-for name in ("hole_count", "edge_density", "bluish_fraction"):
-    print(f"  {name}")
-    print(f"      {features.get_feature(name).description.summary}")
-print(f"\n  count features: {', '.join(features.all_count_feature_names())}")
 
-# 2. Extraction returns a FeatureVector: name -> value, plus by-group views.
-#    The default selection is every group except the colour shortcut.
-vec = features.extract_features(CIRRUS)
-print(f"\ncirrus      {len(vec)} values by default (colour is opt-in)")
+@app.cell
+def _(mo):
+    from pathlib import Path
 
-for group in features.all_groups()[:4]:
-    values = vec.by_group(group.letter)[group.letter]
-    shown = "  ".join(f"{name}={value:.3f}" for name, value in list(values.items())[:3])
-    print(f"  {group.letter}  {group.title:18s} {shown}  ...")
+    import cv2
+    import numpy as np
 
-print(
-    f"  brightest mass at x={vec['centre_of_mass_x']:.2f} y={vec['centre_of_mass_y']:.2f}; "
-    f"elongation {vec['elongation']:.2f} (1 = round, higher = streaked)"
-)
-print(
-    f"  texture: fine {vec['fine_texture']:.3f}, coarse {vec['coarse_texture']:.3f}, "
-    f"ratio {vec['coarse_to_fine_texture_ratio']:.2f}, "
-    f"typical feature size {vec['autocorrelation_half_width']:.1f} px"
-)
+    import edu_ai_suite.images.features as features
+    from edu_ai_suite.images.decode import to_luminance, to_unit_scale
+    from edu_ai_suite.images.flatten import flatten
+    from edu_ai_suite.images.resize import resize_square
 
-# 3. Groups select features, and nothing stops a selection being one group or
-#    one feature. This is the ablation experiment.
-print("\nablation")
-print(
-    f"  groups='ABCDEFG'          {len(features.extract_features(CIRRUS, groups='ABCDEFG'))} columns"
-)
-print(f"  groups='D'                {len(features.extract_features(CIRRUS, groups='D'))} columns")
-print(
-    f"  exclude={{'fine_texture'}}   {len(features.extract_features(CIRRUS, exclude={'fine_texture'}))} columns"
-)
-print(
-    f"  options: working_size={features.FeatureOptions().working_size} "
-    "(every image is resized to it, which is what makes values comparable)"
-)
-row = features.extract_features(CIRRUS, groups="E")
-print("  to_array() gives one Table row, in catalogue order:")
-print(
-    f"    { {name: round(float(value), 3) for name, value in zip(row.names(), row.to_array(), strict=True)} }"
-)
+    HERE = Path(mo.notebook_dir())
+    PHOTO_FILES = {
+        "cirrus": "cirrus.jpg",
+        "volutus": "volutus.jpg",
+        "low cloud": "low_cloud.jpg",
+    }
 
-# 4. Texture is where clouds separate: wispy detail lives at the fine end of the
-#    scale, thick cloud at the coarse end. One ratio orders the three photos.
-print("\ntexture     where the detail lives, 0.5 = scale-neutral")
-print(f"  {'':10s} {'fine':>6s} {'coarse':>7s} {'ratio':>6s} {'size px':>8s}")
-for label, image in (("cirrus", CIRRUS), ("volutus", VOLUTUS), ("low", LOW_CLOUD)):
-    texture = features.extract_features(image)
-    ratio = texture["coarse_to_fine_texture_ratio"]
-    leaning = (
-        "coarse-grained" if ratio >= 0.55 else "fine-grained" if ratio <= 0.45 else "scale-neutral"
-    )
-    print(
-        f"  {label:10s} {texture['fine_texture']:6.3f} {texture['coarse_texture']:7.3f} "
-        f"{ratio:6.2f} {texture['autocorrelation_half_width']:8.1f}  -> {leaning}"
+    def load_rgb(filename: str) -> np.ndarray:
+        """Read a photograph as RGB; OpenCV reads BGR and never guesses the order."""
+        bgr = cv2.imread(str(HERE / filename))
+        if bgr is None:
+            raise FileNotFoundError(HERE / filename)
+        return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+
+    photographs = {name: load_rgb(filename) for name, filename in PHOTO_FILES.items()}
+    return (
+        features,
+        flatten,
+        photographs,
+        resize_square,
+        to_luminance,
+        to_unit_scale,
     )
 
-# 5. The colour shortcut, stated as data rather than as a warning: colour alone
-#    separates wispy high cloud from thick low cloud, which is why the colour
-#    group is off by default.
-print("\nshortcut    colour features alone, off by default")
-high = features.extract_features(CIRRUS, groups="G")
-low = features.extract_features(LOW_CLOUD, groups="G")
-for name in high.names():
-    print(f"  {name:18s} high {high[name]:6.3f}   low {low[name]:6.3f}")
-print(f"  -> {features.get_feature('bluish_fraction').description.summary}")
+
+@app.cell
+def _(mo, photographs):
+    mo.hstack(
+        [mo.image(image, width=260, caption=name.title()) for name, image in photographs.items()],
+        justify="start",
+        wrap=True,
+    )
+    return
+
+
+@app.cell
+def _(mo, photographs):
+    photograph = mo.ui.dropdown(options=list(photographs), value="cirrus", label="photograph")
+    photograph
+    return (photograph,)
+
+
+@app.cell
+def _(
+    flatten,
+    mo,
+    photograph,
+    photographs,
+    resize_square,
+    to_luminance,
+    to_unit_scale,
+):
+    selected = photographs[photograph.value]
+    luma = to_unit_scale(to_luminance(selected))
+    grid = resize_square(luma, 128)
+    values, names = flatten(grid)
+
+    mo.hstack(
+        [
+            mo.image(selected, width=320, caption=f"{photograph.value.title()} (RGB)"),
+            mo.image(grid, width=320, vmin=0, vmax=1, caption="luminance, 128 x 128"),
+        ],
+        justify="start",
+        wrap=True,
+    )
+    return names, selected, values
+
+
+@app.cell
+def _(mo, names, values):
+    mo.md(
+        f"""
+        `pixel_row` composes the same steps as the cells above: decode to luminance,
+        scale to [0, 1], resize to a square, then flatten row by row. The grid has
+        **{len(values)}** values and **{len(names)}** names. The first eight:
+        """
+    )
+    mo.ui.table(
+        [
+            {"index": index, "name": names[index], "value": round(float(values[index]), 4)}
+            for index in range(min(8, len(values)))
+        ],
+        pagination=False,
+        show_download=False,
+    )
+    return
+
+
+@app.cell
+def _(features, mo):
+    mo.md(
+        f"""
+        ## The catalogue
+
+        The catalogue holds **{len(features.all_feature_names())}** features in
+        **{len(features.all_groups())}** groups. A feature is a class with its own
+        name, description and computation, and a group is only a membership list.
+        """
+    )
+    mo.accordion(
+        {
+            f"{group.letter} - {group.title} ({len(group.members)} features)": mo.md(
+                group.description
+            )
+            for group in features.all_groups()
+        }
+    )
+    return
+
+
+@app.cell
+def _(features, mo):
+    groups = mo.ui.multiselect(
+        options=list(features.GROUP_ORDER),
+        value=list(features.DEFAULT_GROUPS),
+        label="groups",
+    )
+    groups
+    return (groups,)
+
+
+@app.cell
+def _(features, groups, mo, selected):
+    selected_groups = "".join(groups.value)
+    mo.stop(not selected_groups, mo.md("Choose at least one group."))
+    vector = features.extract_features(selected, groups=selected_groups)
+    return selected_groups, vector
+
+
+@app.cell
+def _(mo, selected_groups, vector):
+    mo.md(
+        f"""
+        ## Extraction
+
+        Groups **{selected_groups}** select **{len(vector)}** features for this
+        photograph. Values are in catalogue column order, whatever order the
+        groups were chosen in.
+        """
+    )
+    mo.ui.table(
+        [
+            {
+                "group": vector.group_of(name),
+                "feature": name,
+                "value": round(vector[name], 4),
+            }
+            for name in vector.names()
+        ],
+        pagination=False,
+        show_download=False,
+    )
+    return
+
+
+@app.cell
+def _(features, mo):
+    feature_name = mo.ui.dropdown(
+        options=list(features.all_feature_names()),
+        value="mean_intensity",
+        label="feature",
+    )
+    feature_name
+    return (feature_name,)
+
+
+@app.cell
+def _(feature_name, features, mo):
+    feature = features.get_feature(feature_name.value)
+    description = feature.description
+    references = (
+        "\n\n**Further reading.** " + " ".join(description.references)
+        if description.references
+        else ""
+    )
+    mo.md(f"""
+    ## {description.title}
+
+    **{description.summary}**
+
+    {description.intuition}
+
+    **How it is computed.** {description.technical}{references}
+    """)
+    return
+
+
+@app.cell
+def _(features, mo):
+    exclude = mo.ui.multiselect(
+        options=list(features.all_feature_names()),
+        value=["hole_count"],
+        label="features to exclude",
+    )
+    exclude
+    return (exclude,)
+
+
+@app.cell
+def _(exclude, features, mo, selected, selected_groups, vector):
+    ablated = features.extract_features(
+        selected,
+        groups=selected_groups,
+        exclude=exclude.value,
+    )
+    mo.md(
+        f"""
+        ## Ablation
+
+        Excluding **{len(exclude.value)}** feature(s) leaves
+        **{len(ablated)}** of the {len(vector)} selected values. The rest of the
+        pipeline is unchanged.
+        """
+    )
+    mo.ui.table(
+        [
+            {
+                "feature": name,
+                "kept": "yes" if name in ablated else "no",
+                "value": round(ablated[name], 4) if name in ablated else None,
+            }
+            for name in vector.names()
+        ],
+        pagination=False,
+        show_download=False,
+    )
+    return
+
+
+@app.cell
+def _(features, mo):
+    mo.accordion(
+        {"The generated feature guide": mo.md(features.feature_guide_markdown())},
+        lazy=True,
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    The photographs are from the CCSN database (CC0); credits are in
+    `examples/CREDITS.md`. The feature catalogue and the guide are generated
+    from the same classes, so the page above cannot drift from the computation.
+    """)
+    return
+
+
+if __name__ == "__main__":
+    app.run()

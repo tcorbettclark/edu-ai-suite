@@ -42,6 +42,9 @@ lora = [
 dev = [
     "pytest>=8",
     "pillow>=10",
+    "marimo>=0.25.2",
+    "altair>=5",
+    "playwright>=1.50",
 ]
 
 [project.scripts]
@@ -75,3 +78,7 @@ ignore = ["RUF001", "RUF003", "RUF005"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["edu_ai_suite", "synth"]
+
+[tool.ruff.lint.per-file-ignores]
+# A marimo cell displays a UI element by ending with it as a bare expression.
+"examples/*.py" = ["B018"]

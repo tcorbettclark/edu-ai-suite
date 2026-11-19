@@ -1,4 +1,6 @@
-# Image credits — example photographs
+# Example credits — photographs and text
+
+## Photographs
 
 The three photographs are from the
 [Cirrus Cumulus Stratus Nimbus (CCSN) database](https://doi.org/10.7910/DVN/CADDPD)
@@ -14,3 +16,10 @@ Please cite:
 > Zhang, J. L., Liu, P., Zhang, F., & Song, Q. Q. (2018). CloudNet: Ground-based
 > cloud classification with deep convolutional neural network. Geophysical
 > Research Letters, 45, 8665–8672. https://doi.org/10.1029/2018GL077787
+
+## Text
+
+`happy_prince.txt` is Oscar Wilde's *The Happy Prince and Other Tales* (1910), from
+[Project Gutenberg eBook #902](https://www.gutenberg.org/ebooks/902). The text is in
+the public domain in the United States. The file keeps Project Gutenberg's header and
+footer; the language-model notebook strips them with `clean_text`.

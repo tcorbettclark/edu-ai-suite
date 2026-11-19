@@ -121,3 +121,21 @@ before merging, so the shape is checked rather than assumed.
   tutorial text? Generated content cannot go stale; authored content needs a sweep.
 - Would a newcomer reading only the file names and the docstrings arrive at the same
   mental model you have? If not, the code says one thing and the words another.
+
+## Notebooks
+
+The examples are marimo notebooks. They are the runnable examples and the source of the
+README screenshots; do not add a parallel script for the same subject.
+
+- Open them with `uv run marimo edit examples/`.
+- Check them with `uv run python scripts/notebooks.py check`.
+- Run them with `uv run --extra lora python scripts/notebooks.py run`.
+- Regenerate the screenshots with
+  `uv run --extra lora python scripts/notebooks.py screenshots`.
+
+The `marimo-notebook` skill is vendored under `.agents/skills/` for agents that write
+these notebooks. It comes from [marimo-team/skills](https://github.com/marimo-team/skills)
+under the Apache License 2.0; the licence and source commit are in that directory and in
+`skills-lock.json`. Update it with `npx skills update marimo-notebook --project`; do not
+edit the vendored skill by hand. The skill is a development aid: the notebooks and the
+package do not depend on it.

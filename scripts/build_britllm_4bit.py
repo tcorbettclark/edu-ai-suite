@@ -1,6 +1,6 @@
 """Build (and optionally publish) the pinned 4-bit MLX BritLLM artifact; a maintainer script.
 
-``uv run --extra lora python examples/build_britllm_4bit.py`` writes a 4-bit affine
+``uv run --extra lora python scripts/build_britllm_4bit.py`` writes a 4-bit affine
 (group 64) MLX copy of the fp16 source, with the minimal chat template the masked SFT
 path needs, plus a manifest, a model card and the ``Asset`` block for
 ``edu_ai_suite/assets/britllm.py``. ``--upload`` publishes that copy to
