@@ -13,8 +13,8 @@ from collections.abc import Iterator
 from typing import Any
 
 _IMPORT_ERROR = (
-    "MLX not available - orange3-ai-suite[lora] requires macOS on Apple Silicon "
-    "(pip install orange3-ai-suite[lora])"
+    "MLX not available - edu-ai-suite[lora] requires macOS on Apple Silicon "
+    "(pip install edu-ai-suite[lora])"
 )
 
 #: ids per perplexity window; fixed so runs stay comparable.

@@ -68,7 +68,7 @@ def test_support_modules_are_private_and_public_ones_are_not():
 
 
 def test_production_code_outside_images_uses_only_the_public_modules():
-    # Tests may reach inside on purpose; a widget or an example may not.
+    # Tests may reach inside on purpose; an example may not.
     offenders = []
     sources = [
         *(ROOT / "edu_ai_suite").rglob("*.py"),

@@ -1,8 +1,8 @@
 """The feature guide: every feature's description as one Markdown page.
 
 The page is generated from the catalogue each time it is asked for. The Markdown
-stays inside what Qt's own renderer supports - headings, emphasis, inline code,
-links and lists.
+holds headings, emphasis, inline code, links and lists only, so a plain renderer shows
+it.
 """
 
 from __future__ import annotations

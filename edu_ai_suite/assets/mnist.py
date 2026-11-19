@@ -17,8 +17,8 @@ _README = """# MNIST digits
 
 A deterministic subset of [MNIST](https://huggingface.co/datasets/ylecun/mnist)
 (MIT): 500 images per digit for training and 100 per digit for validation,
-kept at the source 28x28 resolution. The folder-per-label layout is what
-Orange's Import Images expects.
+kept at the source 28x28 resolution. Each split keeps one folder per digit,
+which is the layout an image-folder loader expects.
 """
 
 

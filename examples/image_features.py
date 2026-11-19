@@ -2,7 +2,7 @@
 
 Run it from the repository root with ``uv run python examples/image_features.py``. The
 photographs are real skies from the CCSN database (CC0), credited in
-``examples/CREDITS.md``, and nothing here needs Orange or Qt.
+``examples/CREDITS.md``, and nothing here needs a GUI.
 """
 
 from pathlib import Path
@@ -65,7 +65,7 @@ print(
 )
 
 # 3. Groups select features, and nothing stops a selection being one group or
-#    one feature. This is the ablation experiment the widget offers.
+#    one feature. This is the ablation experiment.
 print("\nablation")
 print(
     f"  groups='ABCDEFG'          {len(features.extract_features(CIRRUS, groups='ABCDEFG'))} columns"

@@ -1,6 +1,6 @@
 """The record one training epoch produces: its fields, and their order.
 
-It pulls in nothing heavier than ``typing``, so a widget can read the key order without
+It pulls in nothing heavier than ``typing``, so a caller can read the key order without
 the ML stack. ``EpochStats`` is a plain dict's schema: an ``on_epoch`` hook may add keys
 of its own, and reordering the annotations reorders the table's columns.
 """
@@ -21,6 +21,6 @@ class EpochStats(TypedDict, total=False):
 
 
 #: The keys :func:`~.training.epoch_callback` always fills, in the order it fills
-#: them; the widget-side checkpoint table reads them as its columns, in that
-#: order. Derived from :class:`EpochStats`, never re-listed.
+#: them; the checkpoint table reads them as its columns, in that order. Derived from
+#: :class:`EpochStats`, never re-listed.
 EPOCH_STATS_KEYS: tuple[str, ...] = tuple(EpochStats.__annotations__)

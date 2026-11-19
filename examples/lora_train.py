@@ -49,7 +49,7 @@ if not args.base:
     )
 if not lora.available():
     raise SystemExit(
-        "this needs the lora extra: pip install 'orange3-ai-suite[lora]' (macOS on Apple Silicon)"
+        "this needs the lora extra: pip install 'edu-ai-suite[lora]' (macOS on Apple Silicon)"
     )
 
 # 1. The rows. A corpus is texts for continued pre-training or prompt/completion pairs

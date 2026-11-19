@@ -48,7 +48,7 @@ before merging, so the shape is checked rather than assumed.
 - Does it tell the reader what things were like before it existed? "Before this one
   existed", "used to", "no longer", "was spread over", "previously", "originally",
   "this replaces". The reader has no past: say what is.
-- Does it defend the design? "so the widget and the example cannot drift", "the point
+- Does it defend the design? "so the example and the tutorial cannot drift", "the point
   is", "one spelling", "which is why it can be tested". That is a commit message, and
   it goes stale on a different clock from the code.
 - Does it retell the body? A docstring that walks the statements one by one is a

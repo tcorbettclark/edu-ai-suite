@@ -23,7 +23,7 @@ args = parser.parse_args()
 
 if not lora.available():
     raise SystemExit(
-        "this needs the lora extra: pip install 'orange3-ai-suite[lora]' (macOS on Apple Silicon)"
+        "this needs the lora extra: pip install 'edu-ai-suite[lora]' (macOS on Apple Silicon)"
     )
 
 # The artifact carries the base model's identity, the adapter files and the run's

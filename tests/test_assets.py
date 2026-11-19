@@ -316,8 +316,8 @@ def test_an_explicit_opt_in_is_left_alone(monkeypatch, value):
 
 
 def test_an_already_imported_hub_gets_the_constant_set(monkeypatch):
-    # Inside Orange the Hub is usually imported before a widget runs, and the
-    # env var is then read by nobody: the constant is what is_xet_available()
+    # The Hub is usually imported before this module in a long-lived process, and
+    # the env var is then read by nobody: the constant is what is_xet_available()
     # consults on every download.
     import sys
     import types

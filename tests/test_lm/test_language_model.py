@@ -1,7 +1,6 @@
 """Architecture + LanguageModel tests.
 
-These run in plain Python - no Orange, no Qt - and need only the package's own
-dependencies.
+These run in plain Python and need only the package's own dependencies.
 """
 
 import json
@@ -210,7 +209,7 @@ def test_stop_requested_stops_training_cleanly(tokenizer):
         seen.append(stats["epoch"])
 
     def stop_requested():
-        return len(seen) >= 2  # the widget's Stop button analogue
+        return len(seen) >= 2  # the Stop analogue
 
     model = fit(
         tokenizer,
@@ -352,9 +351,7 @@ def test_another_packages_record_is_refused(tmp_path):
     # would half-work, so it is refused instead.
     path = tmp_path / "not-ours"
     path.mkdir()
-    (path / "meta.json").write_text(
-        json.dumps({"created_by": "edu_ai_suite.lora"})
-    )
+    (path / "meta.json").write_text(json.dumps({"created_by": "edu_ai_suite.lora"}))
     with pytest.raises(ValueError, match="not a Keras language model"):
         LanguageModel.load(path)
 
@@ -403,7 +400,7 @@ def test_saving_an_unfitted_model_writes_nothing(tmp_path):
 
 def test_the_keras_stream_is_one_chunk_and_says_so(monkeypatch, mlp_model):
     # This model can only decode a finished unit, so its stream is everything at
-    # once. The convention is still the stream, so a widget never special-cases
+    # once. The convention is still the stream, so a caller never special-cases
     # which model it is looking at.
     monkeypatch.setattr(mlp_model, "generate", lambda *a, **k: "the whole unit")
     assert list(mlp_model.stream("prompt", 0.5, 7, 3)) == ["the whole unit"]

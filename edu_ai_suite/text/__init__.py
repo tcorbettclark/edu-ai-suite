@@ -4,8 +4,7 @@
 repeated headers and reflow of wrapped lines. :mod:`._split` produces table rows from
 it, and :mod:`._qa` produces prompt/completion pairs from fixed ``Q:``/``A:`` blocks.
 
-Nothing here imports Orange or Qt; the inputs and outputs are strings and frozen
-results.
+The inputs and outputs are strings and frozen results.
 """
 
 from ._clean import CleanOptions, CleanResult, clean_text

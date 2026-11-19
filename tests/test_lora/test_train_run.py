@@ -359,7 +359,7 @@ def test_a_run_without_a_workdir_lands_in_the_temp_root(fake_mlx_lm):
     try:
         assert run_dir.parent.resolve() == Path(tempfile.gettempdir()).resolve()
         # the shared root is nobody's, so the name shows whose directory it is
-        assert run_dir.name.startswith("orange-ai-lora-")
+        assert run_dir.name.startswith("edu-ai-lora-")
         assert (run_dir / "data" / "train.jsonl").is_file()
         assert (run_dir / "adapter" / "adapters.safetensors").is_file()
     finally:

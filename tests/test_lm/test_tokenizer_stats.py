@@ -1,4 +1,4 @@
-"""Tokenizer reporting tests: the read-only views a widget renders.
+"""Tokenizer reporting tests: the read-only views a caller renders.
 
 These live on the tokenizer (``stats``, ``frequency_table``, ``zipf_summary``)
 and never feed back into training.

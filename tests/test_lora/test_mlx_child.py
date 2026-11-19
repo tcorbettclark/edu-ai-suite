@@ -106,7 +106,7 @@ def test_a_training_report_becomes_an_event(capsys):
 
 def test_a_validation_report_is_put_on_the_training_axis(capsys):
     # mlx-lm reports the iteration *before* the evaluation ("iteration": it - 1),
-    # so the child's +1 is what makes the two curves line up in the widget.
+    # so the child's +1 is what makes the two curves line up in the caller.
     emitter = _child.emit_metrics(_TrainingCallback)
     emitter.on_val_loss_report({"iteration": 0, "val_loss": 3.419, "val_time": 0.02})
     assert _lines(capsys) == [ValReport(iteration=1, loss=3.419)]

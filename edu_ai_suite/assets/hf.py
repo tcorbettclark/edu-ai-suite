@@ -1,8 +1,8 @@
 """Hugging Face assets and their caches.
 
 Every asset is a Hub repository: models are fetched as snapshots, datasets are
-loaded with ``datasets`` and reduced to the folder layout the widgets expect. This
-module names the assets, verifies them and returns the usable directory.
+loaded with ``datasets`` and reduced to the folder-per-label layout. This module
+names the assets, verifies them and returns the usable directory.
 
 The Hub cache is ``HF_HUB_CACHE``, else ``$HF_HOME/hub``, else
 ``~/.cache/huggingface/hub``; prepared datasets live under the ``datasets`` cache's
@@ -27,8 +27,8 @@ Prepare = Callable[[Any, Path], None]
 RepoType = Literal["model", "dataset"]
 
 _WEIGHTS = "model.safetensors"
-_VERIFIED = ".orange3-verified.json"
-_PREPARED = ".orange3-prepared.json"
+_VERIFIED = ".edu-ai-verified.json"
+_PREPARED = ".edu-ai-prepared.json"
 
 
 #: The Hub's own switch. Read once, when ``huggingface_hub.constants`` is
@@ -310,9 +310,7 @@ def ensure(
     try:
         path = _snapshot_download(asset, root, False, _progress_class(on_progress))
     except ImportError as exc:  # huggingface_hub absent
-        raise AssetError(
-            "downloading needs huggingface_hub: install orange3-ai-suite[lora]"
-        ) from exc
+        raise AssetError("downloading needs huggingface_hub: install huggingface-hub") from exc
     except Exception as exc:
         raise AssetError(f"could not download {asset.name} into {root}: {exc}") from exc
     if on_progress is not None:

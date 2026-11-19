@@ -1,8 +1,8 @@
 """``edu_ai_suite.lora``: the data, artifact, protocol and training tests.
 
 Data, artifact and protocol tests always run; the end-to-end training tests need the
-converted ``britllm-4bit`` model on disk and skip without it. No test here imports
-Orange or Qt.
+converted ``britllm-4bit`` model on disk and skip without it. Every test here runs in
+plain Python.
 """
 
 import dataclasses
@@ -37,10 +37,7 @@ from edu_ai_suite.lora.mlx_runtime import segments as _segments
 from edu_ai_suite.lora.model import _echo
 from edu_ai_suite.lora.run import _run_spec
 
-_NO_MODEL = (
-    "pinned 4-bit model not cached — use the BritLLM Models widget or "
-    "`assets fetch britllm-4bit`"
-)
+_NO_MODEL = "pinned 4-bit model not cached - run `assets fetch britllm-4bit`"
 slow = pytest.mark.slow  # end-to-end runs (model load + iterations); excluded
 # from the default suite via addopts -m "not slow"; run with `-m slow` when
 # the converted model is present to validate the full path in one go.
@@ -164,7 +161,7 @@ def test_options_validate_and_are_frozen():
         LoRAOptions().iters = 1
 
 
-# ---- the child's wire format (the widget's live-loss source) --------------
+# ---- the child's wire format (the live-loss source) ----------------------
 
 
 @pytest.mark.parametrize(

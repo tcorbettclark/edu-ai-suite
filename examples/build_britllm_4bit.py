@@ -108,9 +108,9 @@ the original authors. See the source model card for the original terms.
 
 ## Use
 
-The Orange AI Suite LoRA widgets take this directory as their base model; the
-BritLLM Models widget downloads it from this repository into the Hugging Face
-cache. The same directory also works directly with `mlx_lm`:
+The `edu_ai_suite` LoRA training path takes this directory as its base model;
+`assets fetch britllm-4bit` downloads it from this repository into the Hugging
+Face cache. The same directory also works directly with `mlx_lm`:
 
 ```bash
 python -m mlx_lm lora --model <this-snapshot> --train --data <dir> ...

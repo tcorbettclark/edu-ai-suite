@@ -1,4 +1,4 @@
-"""The pinned 4-bit MLX BritLLM model used by the LoRA widgets."""
+"""The pinned 4-bit MLX BritLLM model LoRA fine-tuning starts from."""
 
 from __future__ import annotations
 

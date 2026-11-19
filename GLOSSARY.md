@@ -55,7 +55,7 @@ Tokens are built by the tokenizer (`kernel/lm/tokenizer.py`).
 - **pruning** — removing real tokens from a vocabulary, by `keep_top(n)` or by a
   frequency floor `drop_rare(min_count=…)`. The specials always survive, and the
   remaining counts and the total are preserved.
-- **max vocab** — the widget's cap on the vocabulary, applied by `keep_top`
+- **max vocab** — the cap on the vocabulary, applied by `keep_top`
   before training; `0` keeps everything.
 - **dropped occurrences** — corpus occurrences that pruning made
   unrepresentable. They are the difference between the total token count and
@@ -180,7 +180,7 @@ context is padded out with BOS, or when a unit is shorter than `w`.
 - **text stream** — a model's text as it is produced: a generator whose chunks a
   caller concatenates, and *not* the id `stream` above. Every model in the suite
   has one - its `stream` method, with `generate` as the text stream joined up -
-  so a widget can show text arriving without knowing which model it is looking
+  so a caller can show text arriving without knowing which model it is looking
   at. Where the chunks fall is the library's business: mlx-lm slices
   arbitrarily, the Keras models yield the finished unit in one piece.
 - **generation** — repeat: context → logits → pick one id → append it → drop the

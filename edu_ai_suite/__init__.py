@@ -1,5 +1,4 @@
-"""The pure-Python kernel the suite's Orange widgets are built on.
+"""The suite's pure-Python core: image features, language models, LoRA and assets.
 
-Nothing here imports Orange or Qt: the kernel works on NumPy arrays, strings, paths
-and its own objects.
+It works on NumPy arrays, strings, paths and its own objects.
 """

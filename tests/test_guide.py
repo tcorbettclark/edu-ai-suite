@@ -22,9 +22,9 @@ def test_guide_covers_every_feature_and_group():
             assert reference in page
 
 
-def test_guide_is_markdown_the_widget_can_render():
+def test_guide_is_markdown_a_plain_renderer_can_show():
     page = feature_guide_markdown()
-    # Qt's own Markdown renderer has no table support, and neither does this page.
+    # The page has no tables and no fenced code, so a plain Markdown renderer shows it.
     assert "|" not in page
     assert "```" not in page
     assert page.startswith("# Image features\n")

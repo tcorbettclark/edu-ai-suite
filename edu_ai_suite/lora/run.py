@@ -22,7 +22,7 @@ from .data import Format, LoRAData, LoRAOptions, split_for_training
 #: Name of one run's directory. In the shared temp root the name also shows whose
 #: directory it is; inside a directory the caller named, it serves only to be unique,
 #: so the run directory is just a run.
-_SHARED_PREFIX = "orange-ai-lora-"
+_SHARED_PREFIX = "edu-ai-lora-"
 _RUN_PREFIX = "run-"
 
 
