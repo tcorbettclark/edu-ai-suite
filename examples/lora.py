@@ -120,11 +120,15 @@ def _(lora, mo):
         "A cloud's base marks the height of the lifting condensation level.",
     ]
     data = lora.LoRAData.from_texts(CORPUS)
-    mo.md(f"## Data\n\n**{len(data.rows)}** rows of cloud text, no labels.")
-    mo.ui.table(
-        [{"row": index + 1, "text": text} for index, text in enumerate(data.rows)],
-        pagination=False,
-        show_download=False,
+    mo.vstack(
+        [
+            mo.md(f"## Data\n\n**{len(data.rows)}** rows of cloud text, no labels."),
+            mo.ui.table(
+                [{"row": index + 1, "text": text} for index, text in enumerate(data.rows)],
+                pagination=False,
+                show_download=False,
+            ),
+        ]
     )
     return (data,)
 
@@ -223,12 +227,16 @@ def _(
     saved = adapter.save(Path(tempfile.mkdtemp(prefix="edu-ai-suite-lora-artifact-")) / "adapter")
     set_artifact_path(str(saved))
     record = adapter.training
-    mo.md(
-        f"## Run\n\n**{record['iters_completed']}** of "
-        f"**{record['options']['iters']}** iterations, stopped="
-        f"**{record['stopped']}**. The artifact is at `{saved}`."
+    mo.vstack(
+        [
+            mo.md(
+                f"## Run\n\n**{record['iters_completed']}** of "
+                f"**{record['options']['iters']}** iterations, stopped="
+                f"**{record['stopped']}**. The artifact is at `{saved}`."
+            ),
+            mo.ui.table(events, pagination=False, show_download=False),
+        ]
     )
-    mo.ui.table(events, pagination=False, show_download=False)
     return
 
 
@@ -314,15 +322,19 @@ def _(model, mo):
                 }
             )
     model.adapter_enabled = True
-    mo.md(
-        """
-        ## Evaluate
+    mo.vstack(
+        [
+            mo.md(
+                """
+                ## Evaluate
 
-        The adapter should lower the in-domain perplexity. The out-of-domain line
-        shows what that fit costs.
-        """
+                The adapter should lower the in-domain perplexity. The out-of-domain line
+                shows what that fit costs.
+                """
+            ),
+            mo.ui.table(rows, pagination=False, show_download=False),
+        ]
     )
-    mo.ui.table(rows, pagination=False, show_download=False)
     return
 
 

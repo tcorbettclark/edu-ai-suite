@@ -111,42 +111,54 @@ def _(
 
 @app.cell
 def _(mo, names, values):
-    mo.md(
-        f"""
-        `pixel_row` composes the same steps as the cells above: decode to luminance,
-        scale to [0, 1], resize to a square, then flatten row by row. The grid has
-        **{len(values)}** values and **{len(names)}** names. The first eight:
-        """
-    )
-    mo.ui.table(
+    mo.vstack(
         [
-            {"index": index, "name": names[index], "value": round(float(values[index]), 4)}
-            for index in range(min(8, len(values)))
-        ],
-        pagination=False,
-        show_download=False,
+            mo.md(
+                f"""
+                `pixel_row` composes the same steps as the cells above: decode to luminance,
+                scale to [0, 1], resize to a square, then flatten row by row. The grid has
+                **{len(values)}** values and **{len(names)}** names. The first eight:
+                """
+            ),
+            mo.ui.table(
+                [
+                    {
+                        "index": index,
+                        "name": names[index],
+                        "value": round(float(values[index]), 4),
+                    }
+                    for index in range(min(8, len(values)))
+                ],
+                pagination=False,
+                show_download=False,
+            ),
+        ]
     )
     return
 
 
 @app.cell
 def _(features, mo):
-    mo.md(
-        f"""
-        ## The catalogue
+    mo.vstack(
+        [
+            mo.md(
+                f"""
+                ## The catalogue
 
-        The catalogue holds **{len(features.all_feature_names())}** features in
-        **{len(features.all_groups())}** groups. A feature is a class with its own
-        name, description and computation, and a group is only a membership list.
-        """
-    )
-    mo.accordion(
-        {
-            f"{group.letter} - {group.title} ({len(group.members)} features)": mo.md(
-                group.description
-            )
-            for group in features.all_groups()
-        }
+                The catalogue holds **{len(features.all_feature_names())}** features in
+                **{len(features.all_groups())}** groups. A feature is a class with its own
+                name, description and computation, and a group is only a membership list.
+                """
+            ),
+            mo.accordion(
+                {
+                    f"{group.letter} - {group.title} ({len(group.members)} features)": mo.md(
+                        group.description
+                    )
+                    for group in features.all_groups()
+                }
+            ),
+        ]
     )
     return
 
@@ -172,26 +184,30 @@ def _(features, groups, mo, selected):
 
 @app.cell
 def _(mo, selected_groups, vector):
-    mo.md(
-        f"""
-        ## Extraction
-
-        Groups **{selected_groups}** select **{len(vector)}** features for this
-        photograph. Values are in catalogue column order, whatever order the
-        groups were chosen in.
-        """
-    )
-    mo.ui.table(
+    mo.vstack(
         [
-            {
-                "group": vector.group_of(name),
-                "feature": name,
-                "value": round(vector[name], 4),
-            }
-            for name in vector.names()
-        ],
-        pagination=False,
-        show_download=False,
+            mo.md(
+                f"""
+                ## Extraction
+
+                Groups **{selected_groups}** select **{len(vector)}** features for this
+                photograph. Values are in catalogue column order, whatever order the
+                groups were chosen in.
+                """
+            ),
+            mo.ui.table(
+                [
+                    {
+                        "group": vector.group_of(name),
+                        "feature": name,
+                        "value": round(vector[name], 4),
+                    }
+                    for name in vector.names()
+                ],
+                pagination=False,
+                show_download=False,
+            ),
+        ]
     )
     return
 
@@ -246,26 +262,30 @@ def _(exclude, features, mo, selected, selected_groups, vector):
         groups=selected_groups,
         exclude=exclude.value,
     )
-    mo.md(
-        f"""
-        ## Ablation
-
-        Excluding **{len(exclude.value)}** feature(s) leaves
-        **{len(ablated)}** of the {len(vector)} selected values. The rest of the
-        pipeline is unchanged.
-        """
-    )
-    mo.ui.table(
+    mo.vstack(
         [
-            {
-                "feature": name,
-                "kept": "yes" if name in ablated else "no",
-                "value": round(ablated[name], 4) if name in ablated else None,
-            }
-            for name in vector.names()
-        ],
-        pagination=False,
-        show_download=False,
+            mo.md(
+                f"""
+                ## Ablation
+
+                Excluding **{len(exclude.value)}** feature(s) leaves
+                **{len(ablated)}** of the {len(vector)} selected values. The rest of the
+                pipeline is unchanged.
+                """
+            ),
+            mo.ui.table(
+                [
+                    {
+                        "feature": name,
+                        "kept": "yes" if name in ablated else "no",
+                        "value": round(ablated[name], 4) if name in ablated else None,
+                    }
+                    for name in vector.names()
+                ],
+                pagination=False,
+                show_download=False,
+            ),
+        ]
     )
     return
 

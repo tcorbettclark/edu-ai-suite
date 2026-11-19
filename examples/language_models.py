@@ -47,14 +47,18 @@ def _(mo):
     story = cleaned.text[story_start:] if story_start >= 0 else cleaned.text
     corpus = story[:CORPUS_LIMIT].rsplit(".", 1)[0] + "."
 
-    mo.md(f"""
-    The source has **{len(raw_text):,}** characters. Cleaning removed
-    **{cleaned.removed_lines}** lines and stripped the Gutenberg markers:
-    **{cleaned.gutenberg_stripped}**. The notebook trains on the first
-    **{len(corpus):,}** characters of the first story, which is enough for a small
-    model and keeps a training run short.
-    """)
-    mo.md(f"```text\n{corpus[:600]}\n...\n```")
+    mo.vstack(
+        [
+            mo.md(f"""
+            The source has **{len(raw_text):,}** characters. Cleaning removed
+            **{cleaned.removed_lines}** lines and stripped the Gutenberg markers:
+            **{cleaned.gutenberg_stripped}**. The notebook trains on the first
+            **{len(corpus):,}** characters of the first story, which is enough for a small
+            model and keeps a training run short.
+            """),
+            mo.md(f"```text\n{corpus[:600]}\n...\n```"),
+        ]
+    )
     return Path, corpus, lm
 
 
@@ -83,9 +87,13 @@ def _(corpus, lm, mo, tokenizer_name):
             "value": round(stats["single_occurrence_fraction"], 3),
         },
     ]
-    mo.md("## Tokenizer")
-    mo.ui.table(summary, pagination=False, show_download=False)
-    mo.md(f"Most frequent tokens: {tokenizer.frequency_table(12)}")
+    mo.vstack(
+        [
+            mo.md("## Tokenizer"),
+            mo.ui.table(summary, pagination=False, show_download=False),
+            mo.md(f"Most frequent tokens: {tokenizer.frequency_table(12)}"),
+        ]
+    )
     return (tokenizer,)
 
 
@@ -118,23 +126,29 @@ def _(mo, sample_text, tokenizer):
 def _(corpus, lm, mo, tokenizer):
     DEFAULT_CONTEXT_WIDTH = 12
     pairs = lm.make_pairs(tokenizer.encode(corpus), DEFAULT_CONTEXT_WIDTH)
-    mo.md(f"""
-    ## Pairs
-
-    The pair builder turns the id stream into **{len(pairs):,}** predictions, one
-    per id. Each row holds the last **{DEFAULT_CONTEXT_WIDTH}** ids before the
-    target, left-padded with `<bos>`. The first eight:
-    """)
-    mo.ui.table(
+    mo.vstack(
         [
-            {
-                "target": tokenizer.token(int(pairs.targets[row])),
-                "context": " ".join(tokenizer.token(int(token)) for token in pairs.contexts[row]),
-            }
-            for row in range(min(8, len(pairs)))
-        ],
-        pagination=False,
-        show_download=False,
+            mo.md(f"""
+            ## Pairs
+
+            The pair builder turns the id stream into **{len(pairs):,}** predictions, one
+            per id. Each row holds the last **{DEFAULT_CONTEXT_WIDTH}** ids before the
+            target, left-padded with `<bos>`. The first eight:
+            """),
+            mo.ui.table(
+                [
+                    {
+                        "target": tokenizer.token(int(pairs.targets[row])),
+                        "context": " ".join(
+                            tokenizer.token(int(token)) for token in pairs.contexts[row]
+                        ),
+                    }
+                    for row in range(min(8, len(pairs)))
+                ],
+                pagination=False,
+                show_download=False,
+            ),
+        ]
     )
     return (DEFAULT_CONTEXT_WIDTH,)
 
@@ -281,12 +295,17 @@ def _(corpus, lm, mo, tokenizer, training_options):
         }
         for row in epoch_rows
     ]
-    mo.md(
-        f"## Training\n\n**{settings['architecture']}**, "
-        f"{model.results.n_train_pairs:,} train pairs and "
-        f"{model.results.n_val_pairs:,} validation pairs."
+    mo.vstack(
+        [
+            mo.md(
+                f"## Training\n\n**{settings['architecture']}**, "
+                f"{model.results.n_train_pairs:,} train pairs and "
+                f"{model.results.n_val_pairs:,} validation pairs."
+            ),
+            mo.ui.table(table, pagination=False, show_download=False),
+            chart,
+        ]
     )
-    mo.vstack([mo.ui.table(table, pagination=False, show_download=False), chart])
     return (model,)
 
 
@@ -341,25 +360,29 @@ def _(in_domain, model, mo, out_of_domain):
         "in-domain": model.evaluate(in_domain.value),
         "out-of-domain": model.evaluate(out_of_domain.value),
     }
-    mo.md(
-        """
-        ## Evaluate
-
-        Perplexity is `e^loss`: roughly, how many tokens the model is choosing
-        between at each step. The in-domain line should be lower.
-        """
-    )
-    mo.ui.table(
+    mo.vstack(
         [
-            {
-                "text": where,
-                "loss": round(score["loss"], 3),
-                "perplexity": round(score["perplexity"], 3),
-            }
-            for where, score in scores.items()
-        ],
-        pagination=False,
-        show_download=False,
+            mo.md(
+                """
+                ## Evaluate
+
+                Perplexity is `e^loss`: roughly, how many tokens the model is choosing
+                between at each step. The in-domain line should be lower.
+                """
+            ),
+            mo.ui.table(
+                [
+                    {
+                        "text": where,
+                        "loss": round(score["loss"], 3),
+                        "perplexity": round(score["perplexity"], 3),
+                    }
+                    for where, score in scores.items()
+                ],
+                pagination=False,
+                show_download=False,
+            ),
+        ]
     )
     return
 

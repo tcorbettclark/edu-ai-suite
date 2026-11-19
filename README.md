@@ -56,8 +56,9 @@ uv build
 ## Notebooks
 
 The examples are marimo notebooks. Each notebook is the runnable example, and the
-screenshot below is that same notebook with its code and outputs. The notebooks live in
-the repository; the wheel contains the library.
+screenshot below is a short view of it with code and outputs. Click the screenshot, or
+the link below it, for the full static page. The notebooks live in the repository; the
+wheel contains the library.
 
 | Notebook | Shows | Needs |
 |---|---|---|
@@ -67,7 +68,10 @@ the repository; the wheel contains the library.
 
 ### Image features
 
-[![The image-features notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/image_features.png)](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py)
+[![The image-features notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/image_features.png)](https://tcorbettclark.github.io/edu-ai-suite/notebooks/image_features.html)
+
+[Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/image_features.html) ·
+[Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py)
 
 The notebook loads three CCSN cloud photographs, shows the luminance and resize steps,
 and reads the feature catalogue in groups. It then extracts a row, shows one feature's
@@ -76,7 +80,10 @@ Credits for the photographs are in `examples/CREDITS.md`.
 
 ### Language models
 
-[![The language-models notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/language_models.png)](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py)
+[![The language-models notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/language_models.png)](https://tcorbettclark.github.io/edu-ai-suite/notebooks/language_models.html)
+
+[Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/language_models.html) ·
+[Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py)
 
 The notebook cleans Oscar Wilde's *The Happy Prince and Other Tales* (Project Gutenberg
 #902, public domain), builds a character or word tokenizer, shows the pair table, and
@@ -86,7 +93,10 @@ out-of-domain text, and saves and reloads the model. The source and its credit a
 
 ### LoRA fine-tuning
 
-[![The LoRA notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/lora.png)](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py)
+[![The LoRA notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/lora.png)](https://tcorbettclark.github.io/edu-ai-suite/notebooks/lora.html)
+
+[Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/lora.html) ·
+[Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py)
 
 The notebook fetches the pinned 4-bit BritLLM model, turns the cloud corpus into rows,
 and trains an adapter. It shows the run's events, saves the artifact, then loads it and
@@ -184,9 +194,12 @@ uv run --extra lora python scripts/notebooks.py screenshots
 ```
 
 `check` runs `marimo check --strict`; `run` executes every notebook through a temporary
-HTML export; `screenshots` writes `docs/screenshots/<name>.png`. Use `--only NAME` to
-work on one notebook. The screenshots use Playwright with Chromium, falling back to a
-system Chrome; install the browser with `uv run playwright install chromium` if needed.
+HTML export; `screenshots` writes the hero PNG to `docs/screenshots/<name>.png` and the
+full static page to `docs/notebooks/<name>.html`. Use `--only NAME` to work on one
+notebook. GitHub Pages serves `docs/` at `https://tcorbettclark.github.io/edu-ai-suite/`,
+which is where the README's full-notebook links point. The screenshots use Playwright
+with Chromium, falling back to a system Chrome; install the browser with
+`uv run playwright install chromium` if needed.
 
 ## License
 

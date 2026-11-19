@@ -6,11 +6,14 @@ This test keeps the directory, the README links and the screenshot files in step
 
 import ast
 import pathlib
+import struct
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
 SCREENSHOTS = ROOT / "docs" / "screenshots"
+HTML_PAGES = ROOT / "docs" / "notebooks"
 README = ROOT / "README.md"
+PAGES_URL = "https://tcorbettclark.github.io/edu-ai-suite/notebooks"
 
 NOTEBOOKS = ("image_features", "language_models", "lora")
 
@@ -37,16 +40,35 @@ def test_every_example_is_a_marimo_notebook():
         assert "@app.cell" in path.read_text(), path.name
 
 
-def test_the_readme_links_every_notebook_and_screenshot():
+def _png_size(path: pathlib.Path) -> tuple[int, int]:
+    """Width and height from a PNG's IHDR chunk."""
+    header = path.read_bytes()[:24]
+    assert header[:8] == b"\x89PNG\r\n\x1a\n", path
+    return struct.unpack(">II", header[16:24])
+
+
+def test_the_readme_links_every_notebook_screenshot_and_full_page():
     readme = README.read_text()
     for name in NOTEBOOKS:
         assert f"examples/{name}.py" in readme, name
         assert f"docs/screenshots/{name}.png" in readme, name
+        assert f"{PAGES_URL}/{name}.html" in readme, name
 
 
-def test_every_screenshot_exists_and_is_not_empty():
+def test_every_screenshot_exists_and_is_a_hero_crop():
     for name in NOTEBOOKS:
         path = SCREENSHOTS / f"{name}.png"
+        assert path.is_file(), path
+        assert path.stat().st_size > 0, path
+        width, height = _png_size(path)
+        assert width <= 1_500, (name, width)
+        assert height <= 2_000, (name, height)
+        assert height > width, (name, width, height)
+
+
+def test_every_full_static_page_exists():
+    for name in NOTEBOOKS:
+        path = HTML_PAGES / f"{name}.html"
         assert path.is_file(), path
         assert path.stat().st_size > 0, path
 

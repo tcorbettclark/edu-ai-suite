@@ -130,11 +130,13 @@ README screenshots; do not add a parallel script for the same subject.
 - Open them with `uv run marimo edit examples/`.
 - Check them with `uv run python scripts/notebooks.py check`.
 - Run them with `uv run --extra lora python scripts/notebooks.py run`.
-- Regenerate the screenshots with
+- Regenerate the hero screenshots and the full HTML pages with
   `uv run --extra lora python scripts/notebooks.py screenshots`.
 
-The `marimo-notebook` skill is vendored under `.agents/skills/` for agents that write
-these notebooks. It comes from [marimo-team/skills](https://github.com/marimo-team/skills)
+The screenshots are short views; their full static pages live in `docs/notebooks/` and
+are served by GitHub Pages. The `marimo-notebook` skill is vendored under
+`.agents/skills/` for agents that write these notebooks. It comes from
+[marimo-team/skills](https://github.com/marimo-team/skills)
 under the Apache License 2.0; the licence and source commit are in that directory and in
 `skills-lock.json`. Update it with `npx skills update marimo-notebook --project`; do not
 edit the vendored skill by hand. The skill is a development aid: the notebooks and the
