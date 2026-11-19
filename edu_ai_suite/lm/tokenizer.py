@@ -59,7 +59,7 @@ class Tokenizer(ABC):
 
     @classmethod
     def tokenizer_name(cls) -> str:
-        """The name this tokenizer is known by outside the kernel: ``"char"``, ``"word"``."""
+        """The name this tokenizer is recorded under: ``"char"``, ``"word"``."""
         return cls.__name__.removesuffix("Tokenizer").lower()
 
     def __post_init__(self) -> None:

@@ -120,7 +120,7 @@ def test_reflow_qa_pair_keeps_a_line():
 
 
 def test_newline_keeps_joined_documents_apart():
-    # A corpus is assembled outside the kernel by joining documents: a newline is
+    # A corpus is assembled outside this package by joining documents: a newline is
     # a hard break, so no sentence merges across the seam. A space would merge.
     documents = ["Chapter one ends here", "and chapter two begins. It runs on."]
     joined = split_sentences("\n".join(documents))

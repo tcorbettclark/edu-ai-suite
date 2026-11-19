@@ -47,7 +47,7 @@ uv run pytest
 uv build
 ```
 
-## Kernel API
+## Python API
 
 ### Language models
 
@@ -57,7 +57,7 @@ A runnable end-to-end script lives in `examples/lm_from_scratch.py`
 ```python
 import edu_ai_suite.lm as lm
 
-text = "\n".join(texts)  # join documents outside the kernel
+text = "\n".join(texts)  # join documents outside this package
 tokenizer = lm.tokenizer_from_text(text, "char")
 tokenizer = tokenizer.keep_top(2000)  # or .drop_rare(min_count=3); pure, chainable
 stream = tokenizer.encode(text)  # every sentence ends with <eos>

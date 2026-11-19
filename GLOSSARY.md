@@ -25,7 +25,7 @@
 
 ## Tokens
 
-Tokens are built by the tokenizer (`kernel/lm/tokenizer.py`).
+Tokens are built by the tokenizer (`edu_ai_suite/lm/tokenizer.py`).
 
 - **token** — the smallest piece the tokenizer emits: one character (char
   tokenizer) or one word or punctuation mark (word tokenizer).
@@ -81,7 +81,7 @@ Tokens are built by the tokenizer (`kernel/lm/tokenizer.py`).
 
 ## Pairs
 
-Pairs are built by the pair builder (`kernel/lm/pairs.py`).
+Pairs are built by the pair builder (`edu_ai_suite/lm/pairs.py`).
 
 - **target** — the token being predicted: the answer.
 - **pair** — one (context, target). One prediction. Also called an
@@ -89,7 +89,7 @@ Pairs are built by the pair builder (`kernel/lm/pairs.py`).
 - **`Pairs`** — all the pairs of a corpus, held as two arrays: `contexts` and
   `targets`; reached through `make_pairs`, which returns one. Not exported by the
   package façade, so a caller that needs the type by name imports it from
-  `kernel/lm/pairs.py`.
+  `edu_ai_suite/lm/pairs.py`.
 - **stream length** — the number of ids in the stream. Equal to the number of
   predictions, and therefore to the number of pairs. Written `len(stream)` and
   called **`N`**.
@@ -100,7 +100,7 @@ Pairs are built by the pair builder (`kernel/lm/pairs.py`).
   is a stride over the corpus - every n-th unit, offset by the seed - so the
   split follows corpus order: reordering the corpus can move a unit across, and
   appending can only add to the held-out set. How it works is documented on
-  :meth:`Pairs.split` and `kernel/_holdout.py`.
+  :meth:`Pairs.split` and `edu_ai_suite/_holdout.py`.
 - **batch** — a stack of pairs handed to the model at once.
 
 ## Shapes

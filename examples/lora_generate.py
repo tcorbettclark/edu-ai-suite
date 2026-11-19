@@ -43,7 +43,7 @@ def show(with_adapter: bool) -> dict:
     model.adapter_enabled = with_adapter
     print(f"\nadapter     {'on' if with_adapter else 'off'}")
 
-    # `generate` is `stream` joined up, which is the kernel's convention for every
+    # `generate` is `stream` joined up, which is the convention for every
     # model in the suite: the chunks are the library's, so never depend on where they
     # fall. Greedy here, so the same prompt gives the same text twice.
     text = model.generate(PROMPT, temperature=0.0, max_new_tokens=32, seed=0)

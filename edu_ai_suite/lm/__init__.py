@@ -1,4 +1,4 @@
-"""Language-model kernel: tokenizers, pairs, architectures, and the model itself."""
+"""Language models: tokenizers, pairs, architectures, and the model itself."""
 
 from .architecture import LSTM, MLP, Architecture, Bigram, architectures
 from .language_model import LanguageModel

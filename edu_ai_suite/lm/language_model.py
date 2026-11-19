@@ -2,7 +2,7 @@
 
 :class:`LanguageModel` trains on a text, generates a unit, evaluates a text, and
 saves its weights and tokenizer as one directory. Its ``generate`` signature is the
-kernel's convention, shared with the MLX/LoRA models.
+convention the MLX/LoRA models share.
 """
 
 from __future__ import annotations

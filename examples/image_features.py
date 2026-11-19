@@ -1,4 +1,4 @@
-"""Print the kernel's image features, and their catalogue, for three cloud photographs.
+"""Print the image features, and their catalogue, for three cloud photographs.
 
 Run it from the repository root with ``uv run python examples/image_features.py``. The
 photographs are real skies from the CCSN database (CC0), credited in
@@ -18,7 +18,7 @@ HERE = Path(__file__).parent
 def load(name: str) -> np.ndarray:
     """Read one of the photographs in this directory as an RGB array.
 
-    The kernel reads RGB and never guesses channel order.
+    The decoder reads RGB and never guesses channel order.
     """
     bgr = cv2.imread(str(HERE / name))
     if bgr is None:

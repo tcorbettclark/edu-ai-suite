@@ -1,6 +1,6 @@
 """The base model with an optional LoRA adapter, each variant loaded on first use.
 
-:class:`LoRAModel` follows the kernel's generation convention, shared with the Keras
+:class:`LoRAModel` follows the generation convention shared with the Keras
 ``LanguageModel``: ``generate`` is ``stream`` joined up, and ``evaluate`` returns a loss
 and a perplexity.
 """
@@ -32,8 +32,8 @@ class LoRAModel:
     """A base model with an optional LoRA adapter; each variant loads on first use.
 
     ``adapter_enabled`` selects the raw base model or the adapter-fitted one, on the
-    same weights; ``generate``, ``stream`` and ``evaluate`` follow the kernel's
-    convention, shared with the Keras ``LanguageModel``.
+    same weights; ``generate``, ``stream`` and ``evaluate`` follow the convention
+    shared with the Keras ``LanguageModel``.
     """
 
     def __init__(

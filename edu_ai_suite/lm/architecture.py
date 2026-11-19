@@ -24,7 +24,7 @@ class Architecture(BaseEstimator, ABC):
 
     @classmethod
     def architecture_name(cls) -> str:
-        """The name this architecture is known by outside the kernel: ``"mlp"``."""
+        """The name this architecture is recorded under: ``"mlp"``."""
         return cls.__name__.lower()
 
     # How many ids of history the model reads: a hyperparameter where it is

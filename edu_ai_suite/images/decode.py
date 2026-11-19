@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 
 # ITU-R BT.601 luma weights, RGB channel order. Callers must convert OpenCV's
-# BGR first - the kernel never guesses channel order.
+# BGR first - the decoder never guesses channel order.
 _LUMA = (0.299, 0.587, 0.114)
 _MAX_8BIT = 255.0
 _SCALE_TOLERANCE = 1e-6

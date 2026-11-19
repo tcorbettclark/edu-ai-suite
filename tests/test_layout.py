@@ -41,7 +41,7 @@ def test_the_image_domain_has_five_parts():
     assert not (IMAGES / "features" / "decode.py").exists()
 
 
-def test_the_kernel_root_holds_domains_and_their_shared_steps_only():
+def test_the_package_root_holds_domains_and_their_shared_steps_only():
     # A domain package per subject, plus the shared steps that two domains need:
     # the table is the decision, and a new file here has to be argued for.
     assert {p.name for p in PACKAGE.iterdir() if p.is_dir() and not p.name.startswith("__")} == {
@@ -131,7 +131,7 @@ def _boundary() -> set[pathlib.Path]:
 
 def test_only_the_boundary_modules_name_mlx():
     # mlx is Apple-Silicon-only, so a stray import above the boundary would make
-    # the whole kernel unimportable elsewhere - and would hide the coupling from
+    # the whole package unimportable elsewhere - and would hide the coupling from
     # the modules that are supposed to own it.
     boundary = _boundary()
     offenders = []

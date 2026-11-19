@@ -2,7 +2,7 @@
 
 Run it from the repository root with ``uv run --extra lora python examples/lora_train.py
 <model-dir>``, adding ``--stop`` to end the run early and ``--save DIR`` to keep the
-adapter that ``examples/lora_generate.py`` then uses. The kernel's ``lora`` package is
+adapter that ``examples/lora_generate.py`` then uses. The ``lora`` package is
 taken as one object and used qualified, so every call below is a name it exports.
 """
 

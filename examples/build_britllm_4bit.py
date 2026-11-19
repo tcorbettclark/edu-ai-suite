@@ -3,7 +3,7 @@
 ``uv run --extra lora python examples/build_britllm_4bit.py`` writes a 4-bit affine
 (group 64) MLX copy of the fp16 source, with the minimal chat template the masked SFT
 path needs, plus a manifest, a model card and the ``Asset`` block for
-``kernel/assets/britllm.py``. ``--upload`` publishes that copy to
+``edu_ai_suite/assets/britllm.py``. ``--upload`` publishes that copy to
 ``tcorbettclark/britllm-3b-v0.1-4bit-mlx`` (``--repo-id`` overrides) and prints the
 commit SHA to pin.
 """
@@ -244,7 +244,7 @@ def main() -> int:
     print(f"weights SHA-256: {manifest['weights_sha256']}")
     print(f"size: {manifest['size_bytes'] / 1e9:.2f} GB")
     print(
-        f"\nAsset for kernel/assets/britllm.py (unpinned):\n{asset_block(args.repo_id, None, manifest)}"
+        f"\nAsset for edu_ai_suite/assets/britllm.py (unpinned):\n{asset_block(args.repo_id, None, manifest)}"
     )
 
     if args.upload:
