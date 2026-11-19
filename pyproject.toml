@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "edu-ai-suite"
-version = "0.0.1"
+version = "0.0.2"
 description = "Teaching material for image features, tiny language models and LoRA fine-tuning: plain Python, no GUI."
 readme = "README.md"
 license = "MIT"
