@@ -22,12 +22,13 @@ Only the LoRA component needs MLX, and therefore Apple Silicon.
   which carries its tokenizer, so one directory holds everything a model needs.
 - **`edu_ai_suite/lora/`** - LoRA fine-tuning of an MLX base model: options, data, the
   train/validation split, the run, and the adapter and model objects that read it back.
-- **`edu_ai_suite/text/`** - plain text into training rows, behind one facade: cleaning,
-  splitting and Q/A parsing.
+- **`edu_ai_suite/text/`** - a plain-text utility: cleaning, sentence and paragraph
+  splitting, and Q/A parsing, behind one facade.
 - **`edu_ai_suite/assets/`** - the Hugging Face assets, each behind a download function
   that caches and verifies it, and the command-line interface over them.
-- **`examples/`** - one runnable script per subject, and a shell walkthrough of the LoRA
-  scripts in the order a run happens.
+- **`examples/`** - three marimo notebooks, one per subject, with their photographs and
+  text file.
+- **`scripts/notebooks.py`** - runs the notebooks and writes the README screenshots.
 - **`tests/`** - the test suite, in plain Python.
 - **`GLOSSARY.md`** - definitions of key words.
 
@@ -52,86 +53,75 @@ uv run pytest
 uv build
 ```
 
-## Python API
+## Notebooks
+
+The examples are marimo notebooks. Each notebook is the runnable example, and the
+screenshot below is that same notebook with its code and outputs. The notebooks live in
+the repository; the wheel contains the library.
+
+| Notebook | Shows | Needs |
+|---|---|---|
+| [Image features](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py) | the pixel pipeline, the catalogue, groups, extraction, ablation and the feature guide | - |
+| [Language models](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py) | cleaning, tokenizer, pairs, architecture, training, generation, evaluation and save/load | - |
+| [LoRA fine-tuning](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py) | data, options, run events, the artifact, and the adapter off and on | Apple Silicon and the `lora` extra |
+
+### Image features
+
+[![The image-features notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/image_features.png)](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py)
+
+The notebook loads three CCSN cloud photographs, shows the luminance and resize steps,
+and reads the feature catalogue in groups. It then extracts a row, shows one feature's
+description, excludes a feature to show ablation, and opens the generated guide.
+Credits for the photographs are in `examples/CREDITS.md`.
 
 ### Language models
 
-A minimal example showing how to train and run a small LLM.
+[![The language-models notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/language_models.png)](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py)
 
-```python
-import edu_ai_suite.lm as lm
+The notebook cleans Oscar Wilde's *The Happy Prince and Other Tales* (Project Gutenberg
+#902, public domain), builds a character or word tokenizer, shows the pair table, and
+trains one of `Bigram`, `MLP` or `LSTM`. It then generates text, scores in-domain and
+out-of-domain text, and saves and reloads the model. The source and its credit are in
+`examples/happy_prince.txt` and `examples/CREDITS.md`.
 
-text = """...a few thousand lines of normal English text..."""
-held_out_text = """...different text, which the model never trains on..."""
+### LoRA fine-tuning
 
-# The tokenizer is built once and travels inside the model.
-tokenizer = lm.tokenizer_from_text(text, "char")
-tokenizer = tokenizer.keep_top(2000)  # or .drop_rare(min_count=3); pure, chainable
+[![The LoRA notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/lora.png)](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py)
 
-# An architecture is the recipe; a model is that recipe fitted. MLP is a
-# scikit-learn estimator, so get_params() lists its settings.
-architecture = lm.MLP(context_width=16, embedding_dim=32, hidden_units=128)
-model = lm.LanguageModel(architecture, tokenizer).fit(
-    text,
-    lm.TrainingOptions(epochs=15, validation_fraction=0.1, seed=0),
-)
+The notebook fetches the pinned 4-bit BritLLM model, turns the cloud corpus into rows,
+and trains an adapter. It shows the run's events, saves the artifact, then loads it and
+compares the base model with the adapter on generation and perplexity. The training
+button runs a short job; the rest of the notebook works with an artifact from that run
+or from a directory you paste in.
 
-# fit builds pairs at the architecture's context width and splits by
-# TrainingOptions.validation_fraction, so the data and the weights cannot disagree.
+## Running the notebooks
 
-# Generate some text, evaluate on held out text, and save the model.
-model.generate("the ", temperature=0.8, max_new_tokens=64)
-model.evaluate(held_out_text)  # {'loss': ..., 'perplexity': ...}; perplexity = e^loss
-model.save("my-model")  # weights + tokenizer + metadata
+From a clone of the repository:
+
+```bash
+uv sync
+uv run marimo edit examples/
 ```
 
-### LoRA
+Each notebook also runs as a script:
 
-```python
-import tempfile
-from pathlib import Path
-
-import edu_ai_suite.assets as assets
-import edu_ai_suite.lora as lora
-
-base = assets.get_britllm()  # pinned 4-bit MLX weights, cached on first use
-data = lora.LoRAData.from_texts(corpus)  # or lora.LoRAData.from_pairs(pairs)
-with tempfile.TemporaryDirectory() as scratch:  # this run's scratch, deleted on exit
-    run = lora.train_lora(
-        base,
-        data,
-        options=lora.LoRAOptions(iters=300, num_layers=16),
-        workdir=scratch,  # each run gets a fresh child of it
-        name="my-adapter",  # the artifact's name is the caller's to choose
-    )
-    for event in run:  # lora.Params, then TrainReport and ValReport as they arrive
-        print(event)
-    # keep the artifact somewhere you own; the scratch can then be discarded
-    artifact = run.adapter.save(Path("adapters") / run.adapter.name)
-model = lora.LoRAModel.from_artifact(artifact)
-model.generate("In the second century", temperature=0)
-model.evaluate(held_out_text)  # {'loss': ..., 'perplexity': ...}
-model.adapter_enabled = False  # the same base model, before adaptation
+```bash
+uv run python examples/image_features.py
+uv run python examples/language_models.py
+uv run --extra lora python examples/lora.py
 ```
 
-`train_lora` returns a run rather than doing the work: nothing starts until you iterate
-it, each report arrives as a typed event, and `run.adapter` is the artifact once the
-iteration ends. `run.stop()` may be called from any thread - a Stop control in a caller
-does exactly that - and it returns at once; the stop itself happens in the iteration,
-which also waits for the training process to be gone before anything reads its directory.
-mlx-lm writes a checkpoint every `save_every` iterations, so a stop adopts the newest and
-`iters_completed` records how far the run got, while a stop before the first one raises
-`TrainingStopped` and produces no model. The training runs in its own process - a module
-whose name begins `mlx_` hides that, along with mlx-lm's API and file conventions, so the
-rest of `lora/` never sees a subprocess.
+The notebooks need `marimo`; the package itself does not. The developer environment
+installs it, and the LoRA notebook needs the same extra as the rest of LoRA.
 
-## Image feature groups
+## Reference
+
+### Image feature groups
 
 Each feature is a class in `edu_ai_suite.images.features.catalogue`, carrying its own
-name, description sentence and computation. Groups are a set of membership lists over
-that flat catalogue (`edu_ai_suite.images.features.groups`): membership lists used for
-ablation and display, so a feature can belong to more than one group and the grouping
-never touches the feature itself.
+name, description sentence and computation. Groups are membership lists over that flat
+catalogue (`edu_ai_suite.images.features.groups`): a feature can belong to more than one
+group, and the grouping never touches the feature itself.
 
 | Group | Count | What it describes |
 |---|---|---|
@@ -144,40 +134,10 @@ never touches the feature itself.
 | G | 4 | Colour (opt-in): bluish fraction, the blue-red balance, colourfulness, greenery |
 
 Groups A-F run on a preprocessed luminance image. Group G reads colour directly and is
-off by default.
+off by default. `feature_guide_markdown` returns the guide shown in the image notebook
+as one Markdown page, generated from the same feature classes as the values.
 
-```python
-import edu_ai_suite.images.features as features
-
-vec = features.extract_features(rgb_image, groups="ABCDEF")
-vec["hole_count"]  # a feature value
-vec.to_array()  # one float per selected feature
-features.get_feature("hole_count").description  # title, sentence, intuition, mechanics
-features.all_features()  # the full catalogue, in stable column order
-```
-
-### The feature guide
-
-Every feature carries four descriptions: a title, a one-sentence summary, a plain-language
-account of which pictures move it and which leave it cold, and a technical account of how
-it is computed with links for further reading. The whole guide is generated from the
-catalogue when it is asked for, so it cannot drift from the code. `feature_guide_markdown`
-returns the whole page:
-
-```python
-import edu_ai_suite.images.features as features
-
-print(features.feature_guide_markdown())
-```
-
-A runnable script lives in `examples/image_features.py`
-(`uv run python examples/image_features.py`). It reads three real cloud photographs from
-`examples/` (credits in `examples/CREDITS.md`) and shows the catalogue and its
-descriptions, the extraction and ablation selections, fine texture on wispy cirrus against
-coarse texture on a roll cloud, and the colour shortcut separating a blue sky from ground
-vegetation.
-
-## Datasets
+### Datasets
 
 ```python
 import edu_ai_suite.assets as assets
@@ -193,7 +153,7 @@ Hub asset. The source and the prepared tree are cached; repeated calls are offli
 - `britllm-4bit` - [tcorbettclark/britllm-3b-v0.1-4bit-mlx](https://huggingface.co/tcorbettclark/britllm-3b-v0.1-4bit-mlx),
   a 4-bit affine conversion of `britllm/britllm-3b-v0.1` (2.67B parameters, 1.40 GB),
   verified against the SHA-256 of its weights file. It keeps the source model's ODC-BY
-  licence; `examples/build_britllm_4bit.py` builds and optionally publishes it.
+  licence; `scripts/build_britllm_4bit.py` builds and optionally publishes it.
 - `mnist-digits` - [ylecun/mnist](https://huggingface.co/datasets/ylecun/mnist)
   (MIT), 60k/10k parquet; `get_mnist` keeps 500/100 per digit at the source
   28x28 resolution in the folder-per-label layout.
@@ -213,26 +173,20 @@ assets fetch ccsn-clouds
 
 The same interface is available as `python -m edu_ai_suite.assets`.
 
-## Examples
+### Notebook tooling
 
-- `examples/image_features.py` - the catalogue, extraction and the ablation selections,
-  for three cloud photographs.
-- `examples/lm_from_scratch.py` - trains, samples and scores a tiny character-level
-  language model on a six-line corpus.
-- `examples/lora_train.py` - one LoRA job: the rows, the settings, the events and the
-  adapter; `--save DIR` keeps it and `--stop` ends the run early.
-- `examples/lora_generate.py` - loads an adapter and compares the base model with it,
-  text and perplexity both.
-- `examples/lora_inspect.py` - reads an adapter and summarises it: the base model, the
-  rank and the blocks it reached, how many values it holds, how far the run got. Needs
-  no MLX and no model.
-- `examples/build_britllm_4bit.py` - a maintainer script: downloads the fp16 source,
-  converts it to 4-bit MLX, writes the model card and the manifest, and uploads it with
-  `--upload`.
-- `examples/lora_walkthrough.sh` - runs the three LoRA scripts in order:
-  `bash examples/lora_walkthrough.sh`.
+`scripts/notebooks.py` runs the examples and regenerates the screenshots:
 
-The LoRA scripts run with the extra: `uv run --extra lora python examples/lora_train.py`.
+```bash
+uv run python scripts/notebooks.py check
+uv run --extra lora python scripts/notebooks.py run
+uv run --extra lora python scripts/notebooks.py screenshots
+```
+
+`check` runs `marimo check --strict`; `run` executes every notebook through a temporary
+HTML export; `screenshots` writes `docs/screenshots/<name>.png`. Use `--only NAME` to
+work on one notebook. The screenshots use Playwright with Chromium, falling back to a
+system Chrome; install the browser with `uv run playwright install chromium` if needed.
 
 ## License
 

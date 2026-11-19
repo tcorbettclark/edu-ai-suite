@@ -70,8 +70,8 @@ def _module_files():
 
 
 def _swept_files():
-    """Every file the text sweep reads: the package, tests and examples, plus the prose."""
-    for directory in (PACKAGE, ROOT / "tests", ROOT / "examples"):
+    """Every file the text sweep reads: the package, tests, examples and scripts, plus the prose."""
+    for directory in (PACKAGE, ROOT / "tests", ROOT / "examples", ROOT / "scripts"):
         yield from _pruned(directory)
     yield from SWEPT_FILES
 

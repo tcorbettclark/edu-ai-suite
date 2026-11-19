@@ -1,8 +1,8 @@
 """The test that every name the prose puts in backticks exists in the source tree.
 
 The prose is the README and the glossary. The sweep takes each lower-case
-``snake_case`` token in backticks and looks for it in ``edu_ai_suite``, ``examples``
-and ``tests``.
+``snake_case`` token in backticks and looks for it in ``edu_ai_suite``, ``examples``,
+``scripts`` and ``tests``.
 """
 
 import ast
@@ -10,7 +10,7 @@ import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SOURCE_DIRS = [ROOT / "edu_ai_suite", ROOT / "examples", ROOT / "tests"]
+SOURCE_DIRS = [ROOT / "edu_ai_suite", ROOT / "examples", ROOT / "scripts", ROOT / "tests"]
 PROSE = [ROOT / "README.md", ROOT / "GLOSSARY.md"]
 
 #: A lower-case name with at least one underscore: what the code, not prose, calls
@@ -67,6 +67,6 @@ def test_the_prose_sweep_finds_the_names_it_is_meant_to_check():
     # Guard the guard: if the pattern or the file list stopped matching, the test
     # above would pass by finding nothing at all.
     tokens = _prose_tokens()
-    assert len(tokens) >= 15, sorted(tokens)
+    assert len(tokens) >= 12, sorted(tokens)
     assert "context_width" in tokens  # a name the glossary defines
     assert "mean_intensity" in tokens  # a feature the README names
