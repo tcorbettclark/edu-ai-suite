@@ -1,4 +1,4 @@
-"""``python -m ...assets`` entry point."""
+"""``assets`` / ``python -m edu_ai_suite.assets``: the headless asset CLI."""
 
 from .cli import main
 

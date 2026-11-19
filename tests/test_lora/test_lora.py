@@ -39,7 +39,7 @@ from edu_ai_suite.lora.run import _run_spec
 
 _NO_MODEL = (
     "pinned 4-bit model not cached — use the BritLLM Models widget or "
-    "`orange-ai-assets fetch britllm-4bit`"
+    "`assets fetch britllm-4bit`"
 )
 slow = pytest.mark.slow  # end-to-end runs (model load + iterations); excluded
 # from the default suite via addopts -m "not slow"; run with `-m slow` when

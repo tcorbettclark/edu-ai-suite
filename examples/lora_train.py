@@ -45,7 +45,7 @@ args = parser.parse_args()
 if not args.base:
     raise SystemExit(
         "pass a base model: an MLX model directory or a Hugging Face id. "
-        "`orange-ai-assets fetch britllm-4bit` prints the cached path."
+        "`assets fetch britllm-4bit` prints the cached path."
     )
 if not lora.available():
     raise SystemExit(

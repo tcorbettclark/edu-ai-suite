@@ -1,4 +1,4 @@
-"""``orange-ai-assets`` / ``python -m ...assets``: the headless asset CLI."""
+"""``assets`` / ``python -m edu_ai_suite.assets``: the headless asset CLI."""
 
 from __future__ import annotations
 
@@ -21,12 +21,12 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser = argparse.ArgumentParser(
-        prog="orange-ai-assets",
+        prog="assets",
         description="Download and cache the suite's Hugging Face models and datasets.",
         epilog="""examples:
-  orange-ai-assets list
-  orange-ai-assets fetch mnist-digits
-  orange-ai-assets fetch britllm-4bit --cache ./hf-cache""",
+  assets list
+  assets fetch mnist-digits
+  assets fetch britllm-4bit --cache ./hf-cache""",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     commands = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
