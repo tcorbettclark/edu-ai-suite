@@ -9,8 +9,8 @@ pipeline each feature reads.
 
 from __future__ import annotations
 
-import cv2
 import numpy as np
+from skimage.filters import median
 
 from ..decode import drop_alpha, to_luminance, to_unit_scale
 from ..resize import resize_square
@@ -69,7 +69,10 @@ def preprocess(image: np.ndarray, options: FeatureOptions) -> np.ndarray:
     """
     image = _geometry(to_luminance(image), options)
     if options.denoise:
-        image = cv2.medianBlur(np.ascontiguousarray(image, dtype=np.float32), options.denoise_ksize)
+        image = median(
+            np.ascontiguousarray(image, dtype=np.float32),
+            footprint=np.ones((options.denoise_ksize,) * 2, dtype=bool),
+        )
     if options.contrast_normalise:
         image = _contrast_normalise(image)
     return np.ascontiguousarray(image, dtype=np.float32)

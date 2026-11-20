@@ -21,9 +21,9 @@ from edu_ai_suite.images.features import (
 )
 from synth import cloud_image
 
-EXPECTED_GROUP_SIZES = {"A": 6, "B": 10, "C": 6, "D": 6, "E": 3, "F": 3, "G": 4}
+EXPECTED_GROUP_SIZES = {"A": 7, "B": 10, "C": 8, "D": 11, "E": 5, "F": 4, "G": 7}
 TOTAL = sum(EXPECTED_GROUP_SIZES.values())
-assert TOTAL == 38
+assert TOTAL == 52
 
 
 def test_catalogue_structure():
@@ -101,8 +101,8 @@ def test_get_feature_errors():
 
 def test_extraction_full_vector():
     vec = extract_features(cloud_image(seed=1))
-    assert len(vec) == 34  # default: all groups EXCEPT the colour shortcut
-    assert vec.names() == all_feature_names()[:34]  # A-F, G excluded by default
+    assert len(vec) == 45  # default: all groups EXCEPT the colour shortcut
+    assert vec.names() == all_feature_names()[:45]  # A-F, G excluded by default
     assert all(vec.group_of(n) != "G" for n in vec.names())
 
     full = extract_features(cloud_image(seed=1), groups="ABCDEFG")
@@ -133,7 +133,7 @@ def test_group_subsetting_ablation():
 def test_feature_level_exclusion():
     full = extract_features(cloud_image(seed=1))
     fewer = extract_features(cloud_image(seed=1), exclude={"skewness", "hole_count"})
-    assert len(fewer) == 32
+    assert len(fewer) == 43
     assert "skewness" not in fewer and "hole_count" not in fewer
     for name in fewer.names():
         assert fewer[name] == full[name]  # other values unchanged
@@ -162,7 +162,7 @@ def test_by_group_view():
 def test_exclude_accepts_one_name():
     vec = extract_features(cloud_image(seed=1), exclude="hole_count")
     assert "hole_count" not in vec
-    assert len(vec) == 33
+    assert len(vec) == 44
 
 
 def test_selection_is_deduplicated_and_in_column_order():
@@ -185,9 +185,14 @@ def test_error_paths():
 def test_extraction_uses_fixed_working_size():
     small = cloud_image(seed=4)  # 128x128
     big = np.kron(small, np.ones((2, 2), dtype=np.float32))  # 256x256
-    # A 2x2 block-upcast image, downsampled back to 128 with INTER_AREA, is the
-    # original again - so the features must match. This fails if no resize runs.
-    assert np.allclose(extract_features(big).to_array(), extract_features(small).to_array())
+    # A 2x2 block-upcast image, resampled back to 128, is the original up to the
+    # anti-aliasing filter, so the features must match. Measured on this probe:
+    # the largest difference is 2.8e-3 (autocorrelation_half_width, a value of
+    # 10.7) and every other feature is within 6e-4, against whole factors of
+    # difference for unresized 256-pixel features. This fails if no resize runs.
+    assert np.allclose(
+        extract_features(big).to_array(), extract_features(small).to_array(), atol=5e-3
+    )
 
 
 def test_one_pixel_image_yields_finite_features():

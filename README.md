@@ -36,9 +36,9 @@ Only the LoRA component needs MLX, and therefore Apple Silicon.
 
 Requirements: Python 3.11+, and macOS on Apple Silicon for LoRA training.
 
-Everything except LoRA is a plain dependency: OpenCV for the image pipeline, Keras on a
-TensorFlow backend for the from-scratch language models. Only LoRA is an extra, because
-it uses MLX, which is specific to Apple Silicon.
+Everything except LoRA is a plain dependency: scikit-image for the image pipeline, Keras
+on a TensorFlow backend for the from-scratch language models. Only LoRA is an extra,
+because it uses MLX, which is specific to Apple Silicon.
 
 ```bash
 pip install edu-ai-suite            # everything but LoRA
@@ -135,13 +135,13 @@ group, and the grouping never touches the feature itself.
 
 | Group | Count | What it describes |
 |---|---|---|
-| A | 6 | Global photometry: brightness, contrast, skewness, kurtosis, bright fraction |
+| A | 7 | Global photometry: brightness, contrast, skewness, kurtosis, bright fraction, tone entropy |
 | B | 10 | Row/column/diagonal profile summaries: trend, roughness, peaks, crossings |
-| C | 6 | Spatial mass: centre of mass, spread, elongation, radial gradient |
-| D | 6 | Texture: gradient, edge density, fine/coarse texture, autocorrelation width |
-| E | 3 | Topology: hole count, foreground area, stroke crossings |
-| F | 3 | Symmetry: left-right, top-bottom, quadrant similarity |
-| G | 4 | Colour (opt-in): bluish fraction, the blue-red balance, colourfulness, greenery |
+| C | 8 | Spatial mass: centre of mass, spread, elongation, radial gradient, solidity and extent of the largest bright region |
+| D | 11 | Texture: gradient, edge density, fine/coarse texture, autocorrelation width, neighbour contrast, homogeneity and uniformity, local entropy, mid-scale amplitude |
+| E | 5 | Topology: hole count, foreground area, stroke crossings, largest bright region, skeleton density |
+| F | 4 | Symmetry: left-right, top-bottom, quadrant similarity, half-turn agreement |
+| G | 7 | Colour (opt-in): bluish fraction, the blue-red and blue-yellow balances, colourfulness, greenery, lightness, saturation |
 
 Groups A-F run on a preprocessed luminance image. Group G reads colour directly and is
 off by default. `feature_guide_markdown` returns the guide shown in the image notebook

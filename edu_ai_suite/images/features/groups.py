@@ -29,8 +29,9 @@ _GROUPS: tuple[Group, ...] = (
     Group(
         "A",
         "global photometry",
-        "Global photometry: brightness, contrast, skewness, kurtosis and "
-        "bright fraction. Little spatial information; useful as a baseline.",
+        "Global photometry: brightness, contrast, skewness, kurtosis, bright "
+        "fraction and tone entropy. Little spatial information; useful as a "
+        "baseline.",
         (
             "mean_intensity",
             "intensity_std",
@@ -38,6 +39,7 @@ _GROUPS: tuple[Group, ...] = (
             "skewness",
             "kurtosis",
             "bright_fraction",
+            "intensity_entropy",
         ),
     ),
     Group(
@@ -62,7 +64,8 @@ _GROUPS: tuple[Group, ...] = (
         "C",
         "spatial mass",
         "Spatial mass: where the bright matter sits, how wide or tall it is, "
-        "elongation and the radial gradient.",
+        "elongation, the radial gradient, and the solidity and extent of the "
+        "largest bright region.",
         (
             "centre_of_mass_x",
             "centre_of_mass_y",
@@ -70,13 +73,17 @@ _GROUPS: tuple[Group, ...] = (
             "vertical_spread",
             "elongation",
             "radial_gradient",
+            "largest_region_solidity",
+            "largest_region_extent",
         ),
     ),
     Group(
         "D",
         "texture",
         "Texture: gradient strength, edge density, fine and coarse texture, "
-        "and autocorrelation width. Carries most signal for cloud imagery.",
+        "autocorrelation width, the contrast, homogeneity and uniformity of "
+        "neighbouring pixels, local entropy and mid-scale amplitude. Carries most "
+        "signal for cloud imagery.",
         (
             "mean_gradient_magnitude",
             "edge_density",
@@ -84,28 +91,55 @@ _GROUPS: tuple[Group, ...] = (
             "coarse_texture",
             "coarse_to_fine_texture_ratio",
             "autocorrelation_half_width",
+            "neighbour_contrast",
+            "neighbour_homogeneity",
+            "neighbour_uniformity",
+            "local_entropy",
+            "band_amplitude",
         ),
     ),
     Group(
         "E",
         "topology",
-        "Topology: Otsu foreground, enclosed-background hole count and stroke "
-        "crossings. The classic digit features.",
-        ("hole_count", "foreground_area_fraction", "stroke_crossing_count"),
+        "Topology: Otsu foreground, enclosed-background hole count, stroke "
+        "crossings, the largest bright region's share of the frame and its "
+        "skeleton density. The classic digit features.",
+        (
+            "hole_count",
+            "foreground_area_fraction",
+            "stroke_crossing_count",
+            "largest_region_fraction",
+            "skeleton_density",
+        ),
     ),
     Group(
         "F",
         "symmetry",
-        "Symmetry: left-right, top-bottom and quadrant self-similarity.",
-        ("left_right_symmetry", "top_bottom_symmetry", "quadrant_self_similarity"),
+        "Symmetry: left-right, top-bottom, quadrant self-similarity and "
+        "agreement under a half turn.",
+        (
+            "left_right_symmetry",
+            "top_bottom_symmetry",
+            "quadrant_self_similarity",
+            "rotational_symmetry",
+        ),
     ),
     Group(
         "G",
         "colour",
-        "Colour: bluish fraction, the blue-red balance, colourfulness and "
-        "greenery. A deliberate shortcut, off by default: colour alone can "
-        "answer 'is there sky?' without learning any spatial structure.",
-        ("bluish_fraction", "blue_minus_red_mean", "mean_chroma", "greenery_fraction"),
+        "Colour: bluish fraction, the blue-red and blue-yellow balances, "
+        "colourfulness, greenery, perceived lightness and saturation. A "
+        "deliberate shortcut, off by default: colour alone can answer 'is "
+        "there sky?' without learning any spatial structure.",
+        (
+            "bluish_fraction",
+            "blue_minus_red_mean",
+            "mean_chroma",
+            "greenery_fraction",
+            "perceptual_lightness",
+            "blue_minus_yellow_mean",
+            "saturation_mean",
+        ),
     ),
 )
 

@@ -20,15 +20,16 @@ class EdgeDensity(Feature):
             "own terms."
         ),
         technical=(
-            "Sobel gradient magnitude, thresholded at options.edge_density_frac (default 0.5) "
-            "times the image's 99th percentile gradient, and averaged. The fraction is "
+            "The gradient response of `gradient_magnitude`, thresholded at "
+            "options.edge_density_frac (default 0.5) times the image's 99th percentile "
+            "response, and averaged. The fraction is "
             "configurable, so the definition says 'configured', not a number. A flat image "
             "has no gradient and returns 0.0. A fixed percentile threshold would return the "
             "same density for every image, which is why the threshold is a fraction of each "
             "image's own p99."
         ),
         references=(
-            "[OpenCV: Sobel derivatives](https://docs.opencv.org/4.x/d2/d2c/tutorial_sobel_derivatives.html)",
+            "[scikit-image: Sobel filter](https://scikit-image.org/docs/0.26.x/api/skimage.filters.html#skimage.filters.sobel)",
         ),
     )
 

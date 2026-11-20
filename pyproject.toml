@@ -19,11 +19,15 @@ license = "MIT"
 requires-python = ">=3.11"
 
 # Base: what the package itself imports. huggingface-hub is here because the
-# asset downloader names it directly; datasets only happens to pull it in.
+# asset downloader names it directly; datasets only happens to pull it in. Pillow
+# decodes image files and applies their EXIF orientation; pillow-heif adds the
+# HEIC format that phone cameras write.
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
-    "opencv-python-headless>=4.12,<5",
+    "scikit-image>=0.26,<0.27",
+    "pillow>=10",
+    "pillow-heif>=0.18",
     "datasets>=5.1",
     "huggingface-hub>=0.29",
     "keras>=3.10.0",
@@ -41,7 +45,6 @@ lora = [
 [dependency-groups]
 dev = [
     "pytest>=8",
-    "pillow>=10",
     "marimo>=0.25.2",
     "altair>=5",
     "playwright>=1.50",

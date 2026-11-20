@@ -7,17 +7,26 @@ rules it builds on are in :mod:`_conventions`.
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-import cv2
 import numpy as np
+from scipy.ndimage import uniform_filter
 from scipy.signal import find_peaks
+from skimage.feature import graycomatrix, graycoprops
+from skimage.filters import sobel, threshold_otsu
+from skimage.measure import block_reduce, label, regionprops
 
-from ._conventions import EPS, safe_corr
+from ._conventions import EPS, is_flat, safe_corr
 from .options import FeatureOptions
+
+if TYPE_CHECKING:  # annotation only: scikit-image does not export the class
+    from skimage.measure._regionprops import RegionProperties
 
 LOCAL_STD_WINDOW = 5
 COARSE_BLOCK = 16
+# Coarse levels keep sensor noise inside one level, so neighbouring-pixel
+# measures move by a few per cent under a small jitter rather than by a factor.
+GLCM_LEVELS = 8
 
 
 class MassMoments(NamedTuple):
@@ -94,42 +103,74 @@ def percentile_span(image: np.ndarray) -> float:
 
 
 def gradient_magnitude(image: np.ndarray) -> np.ndarray:
-    """Sobel gradient magnitude of the preprocessed image."""
-    gx = cv2.Sobel(image, cv2.CV_32F, 1, 0, ksize=3)
-    gy = cv2.Sobel(image, cv2.CV_32F, 0, 1, ksize=3)
-    return cv2.magnitude(gx, gy)
+    """Root mean square of the two Sobel responses of the preprocessed image.
+
+    ``skimage.filters.sobel`` halves the operator into one response per axis and
+    divides by the square root of the dimension, so the value is
+    ``sqrt((gx^2 + gy^2) / 2)``.
+    """
+    return sobel(image)
 
 
 def local_std_mean(image: np.ndarray) -> float:
     """Mean local standard deviation over ``LOCAL_STD_WINDOW`` x ``LOCAL_STD_WINDOW`` windows."""
     image32 = image.astype(np.float32)
-    mean = cv2.boxFilter(image32, -1, (LOCAL_STD_WINDOW,) * 2)
-    mean_sq = cv2.boxFilter(image32 * image32, -1, (LOCAL_STD_WINDOW,) * 2)
+    mean = uniform_filter(image32, size=LOCAL_STD_WINDOW, mode="reflect")
+    mean_sq = uniform_filter(image32 * image32, size=LOCAL_STD_WINDOW, mode="reflect")
     var = np.clip(mean_sq - mean * mean, 0.0, None)
     return float(np.sqrt(var).mean())
 
 
 def block_mean_variance(image: np.ndarray) -> float:
-    """Variance of the means of ``COARSE_BLOCK`` x ``COARSE_BLOCK`` blocks, area-averaged."""
+    """Variance of the means of ``COARSE_BLOCK`` x ``COARSE_BLOCK`` blocks, area-averaged.
+
+    Only whole blocks are kept, so no padded border enters the means.
+    """
     h, w = image.shape
-    out_h, out_w = max(h // COARSE_BLOCK, 1), max(w // COARSE_BLOCK, 1)
-    blocks = cv2.resize(image, (out_w, out_h), interpolation=cv2.INTER_AREA)
+    block_h, block_w = min(COARSE_BLOCK, h), min(COARSE_BLOCK, w)
+    whole = image[: h // block_h * block_h, : w // block_w * block_w]
+    blocks = block_reduce(whole, (block_h, block_w), func=np.mean)
     return float(blocks.astype(np.float64).var())
 
 
 def otsu_foreground(image: np.ndarray) -> np.ndarray:
     """A boolean foreground mask from Otsu's threshold, the bright side as foreground.
 
-    Polarity is fixed: brighter than the threshold is foreground, so a
+    The threshold comes from Otsu's method on the image's own values. Polarity
+    is fixed: brighter than the threshold is foreground, so a
     dark-object-on-light image must be inverted by the caller. A flat image has
     no foreground.
     """
-    lo, hi = float(image.min()), float(image.max())
-    if hi - lo < EPS:
+    if float(image.max()) - float(image.min()) < EPS:
         return np.zeros(image.shape, dtype=bool)
-    u8 = np.round((image - lo) / (hi - lo) * 255.0).astype(np.uint8)
-    threshold, _ = cv2.threshold(u8, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    return image > lo + float(threshold) / 255.0 * (hi - lo)
+    return image > threshold_otsu(image)
+
+
+def glcm_statistic(image: np.ndarray, statistic: str) -> float:
+    """``statistic`` of the grey-level co-occurrence matrix of a [0, 1] image.
+
+    The matrix counts horizontal neighbour pairs at distance one, quantised to
+    ``GLCM_LEVELS`` levels, and is symmetric, so each pair is counted in both
+    directions. A flat image has no texture and returns 0.0.
+    """
+    if is_flat(image):
+        return 0.0
+    quantised = np.clip(np.round(image * (GLCM_LEVELS - 1)), 0, GLCM_LEVELS - 1).astype(np.uint8)
+    matrix = graycomatrix(quantised, [1], [0], levels=GLCM_LEVELS, symmetric=True, normed=True)
+    try:
+        properties = graycoprops(matrix, statistic)
+    except ValueError as error:
+        raise ValueError(f"unknown GLCM statistic {statistic!r}") from error
+    return float(properties[0, 0])
+
+
+def largest_region(image: np.ndarray) -> RegionProperties | None:
+    """The largest 8-connected component of the Otsu foreground, or None when there is none."""
+    foreground = otsu_foreground(image)
+    if not foreground.any():
+        return None
+    labels = label(foreground, connectivity=2)
+    return max(regionprops(labels), key=lambda region: region.area)
 
 
 def mirror_corr(image: np.ndarray, axis: int) -> float:

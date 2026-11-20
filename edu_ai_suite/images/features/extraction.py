@@ -69,8 +69,8 @@ def extract_features(
     Parameters
     ----------
     image:
-        RGB(A) or grayscale array in [0, 1] or [0, 255]; channel order is RGB
-        (convert OpenCV's BGR before calling).
+        RGB(A) or grayscale array in [0, 1] or [0, 255]; channel order is RGB,
+        as ``skimage.io.imread`` returns it.
     options:
         :class:`FeatureOptions`; defaults applied when None.
     groups:

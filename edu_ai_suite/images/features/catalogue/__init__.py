@@ -14,7 +14,9 @@ from collections.abc import Iterable
 from ..feature import Feature
 from .anti_diagonal_profile_peaks import AntiDiagonalProfilePeaks
 from .autocorrelation_half_width import AutocorrelationHalfWidth
+from .band_amplitude import BandAmplitude
 from .blue_minus_red_mean import BlueMinusRedMean
+from .blue_minus_yellow_mean import BlueMinusYellowMean
 from .bluish_fraction import BluishFraction
 from .bright_fraction import BrightFraction
 from .centre_of_mass_x import CentreOfMassX
@@ -32,20 +34,32 @@ from .foreground_area_fraction import ForegroundAreaFraction
 from .greenery_fraction import GreeneryFraction
 from .hole_count import HoleCount
 from .horizontal_spread import HorizontalSpread
+from .intensity_entropy import IntensityEntropy
 from .intensity_std import IntensityStd
 from .kurtosis import Kurtosis
+from .largest_region_extent import LargestRegionExtent
+from .largest_region_fraction import LargestRegionFraction
+from .largest_region_solidity import LargestRegionSolidity
 from .left_right_symmetry import LeftRightSymmetry
+from .local_entropy import LocalEntropy
 from .mean_chroma import MeanChroma
 from .mean_gradient_magnitude import MeanGradientMagnitude
 from .mean_intensity import MeanIntensity
+from .neighbour_contrast import NeighbourContrast
+from .neighbour_homogeneity import NeighbourHomogeneity
+from .neighbour_uniformity import NeighbourUniformity
+from .perceptual_lightness import PerceptualLightness
 from .profile_median_crossing_count import ProfileMedianCrossingCount
 from .profile_row_column_correlation import ProfileRowColumnCorrelation
 from .quadrant_self_similarity import QuadrantSelfSimilarity
 from .radial_gradient import RadialGradient
 from .robust_contrast import RobustContrast
+from .rotational_symmetry import RotationalSymmetry
 from .row_profile_peaks import RowProfilePeaks
 from .row_profile_roughness import RowProfileRoughness
 from .row_profile_trend import RowProfileTrend
+from .saturation_mean import SaturationMean
+from .skeleton_density import SkeletonDensity
 from .skewness import Skewness
 from .stroke_crossing_count import StrokeCrossingCount
 from .top_bottom_symmetry import TopBottomSymmetry
@@ -58,6 +72,7 @@ _CATALOGUE: tuple[Feature, ...] = (
     Skewness(),
     Kurtosis(),
     BrightFraction(),
+    IntensityEntropy(),
     RowProfileTrend(),
     RowProfileRoughness(),
     RowProfilePeaks(),
@@ -74,22 +89,35 @@ _CATALOGUE: tuple[Feature, ...] = (
     VerticalSpread(),
     Elongation(),
     RadialGradient(),
+    LargestRegionSolidity(),
+    LargestRegionExtent(),
     MeanGradientMagnitude(),
     EdgeDensity(),
     FineTexture(),
     CoarseTexture(),
     CoarseToFineTextureRatio(),
     AutocorrelationHalfWidth(),
+    NeighbourContrast(),
+    NeighbourHomogeneity(),
+    NeighbourUniformity(),
+    LocalEntropy(),
+    BandAmplitude(),
     HoleCount(),
     ForegroundAreaFraction(),
     StrokeCrossingCount(),
+    LargestRegionFraction(),
+    SkeletonDensity(),
     LeftRightSymmetry(),
     TopBottomSymmetry(),
     QuadrantSelfSimilarity(),
+    RotationalSymmetry(),
     BluishFraction(),
     BlueMinusRedMean(),
     MeanChroma(),
     GreeneryFraction(),
+    PerceptualLightness(),
+    BlueMinusYellowMean(),
+    SaturationMean(),
 )
 
 

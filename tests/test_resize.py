@@ -1,8 +1,8 @@
-"""Resampling to a square: area when shrinking, bilinear when growing."""
+"""Resampling to a square: anti-aliased when shrinking, bilinear when growing."""
 
-import cv2
 import numpy as np
 import pytest
+from skimage.transform import resize
 
 from edu_ai_suite.images.resize import resize_square
 
@@ -13,12 +13,17 @@ def test_resize_stretches_the_whole_frame_to_a_square():
 
 
 @pytest.mark.parametrize("source, size", [(40, 8), (8, 40)])
-def test_resize_uses_area_when_shrinking_and_bilinear_when_growing(source, size):
+def test_resize_uses_the_policy_for_a_single_direction(source, size):
     image = np.linspace(0.0, 1.0, source * source, dtype=np.float32).reshape(source, source)
-    expected = cv2.INTER_AREA if size < source else cv2.INTER_LINEAR  # the policy this module owns
-    assert np.allclose(
-        resize_square(image, size), cv2.resize(image, (size, size), interpolation=expected)
+    expected = resize(
+        image,
+        (size, size),
+        order=1,
+        mode="reflect",
+        preserve_range=True,
+        anti_aliasing=size < source,  # the policy this module owns
     )
+    assert np.allclose(resize_square(image, size), expected)
 
 
 def test_mixed_resize_applies_the_policy_per_axis():
@@ -26,13 +31,16 @@ def test_mixed_resize_applies_the_policy_per_axis():
     image = np.zeros((10, 40), dtype=np.float32)
     image[:, 0] = 1.0  # a one-pixel stripe: bilinear downsampling would skip it
     out = resize_square(image, 16)
-    area_then_grow = cv2.resize(
-        cv2.resize(image, (16, 10), interpolation=cv2.INTER_AREA),
-        (16, 16),
-        interpolation=cv2.INTER_LINEAR,
+    shrunk = resize(
+        image, (10, 16), order=1, mode="reflect", preserve_range=True, anti_aliasing=True
     )
-    assert np.allclose(out, area_then_grow)
-    assert out[::5, 0].max() > 0.3  # the stripe survives downsampling
+    shrink_then_grow = resize(
+        shrunk, (16, 16), order=1, mode="reflect", preserve_range=True, anti_aliasing=False
+    )
+    assert np.allclose(out, shrink_then_grow)
+    # The stripe spreads over the columns its Gaussian prefilter covers, so no
+    # pixel keeps its source level; measured 0.297 at column 0.
+    assert out[:, 0].max() > 0.25
 
 
 def test_resize_keeps_already_square_input_unresampled():
@@ -44,7 +52,10 @@ def test_resize_keeps_already_square_input_unresampled():
 
 def test_resize_carries_channels():
     rgb = np.zeros((10, 10, 3), dtype=np.float32)
-    assert resize_square(rgb, 4).shape == (4, 4, 3)
+    rgb[..., 2] = 1.0
+    out = resize_square(rgb, 4)
+    assert out.shape == (4, 4, 3)
+    assert np.allclose(out[..., 2], 1.0)  # channels are resampled apart, not mixed
 
 
 @pytest.mark.parametrize("size", [0, -3, True, 2.5, "8"])

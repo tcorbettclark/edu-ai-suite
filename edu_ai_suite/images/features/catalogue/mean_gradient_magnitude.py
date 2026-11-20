@@ -18,14 +18,14 @@ class MeanGradientMagnitude(Feature):
             "measures overall busyness rather than whether any edge exists."
         ),
         technical=(
-            "Sobel gradients in x and y over the preprocessed image, combined with "
-            "cv2.magnitude and averaged. The 3x3 Sobel operator responds to changes at the "
+            "Root mean square of the horizontal and vertical Sobel responses over the "
+            "preprocessed image, averaged. The 3x3 Sobel operator responds to changes at the "
             "scale of a few pixels, so it is a fine-scale measure; `edge_density` "
             "turns the same gradient field into a fraction, and "
             "`autocorrelation_half_width` gives a typical feature size in pixels."
         ),
         references=(
-            "[OpenCV: Sobel derivatives](https://docs.opencv.org/4.x/d2/d2c/tutorial_sobel_derivatives.html)",
+            "[scikit-image: Sobel filter](https://scikit-image.org/docs/0.26.x/api/skimage.filters.html#skimage.filters.sobel)",
         ),
     )
 

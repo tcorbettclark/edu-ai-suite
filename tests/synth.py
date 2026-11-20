@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import cv2
 import numpy as np
+from skimage.filters import gaussian
 
 
 def uniform_image(level: float = 0.5, size: int = 128) -> np.ndarray:
@@ -79,7 +79,7 @@ def cloud_image(seed: int = 0, size: int = 128) -> np.ndarray:
     """A smooth cloud-like blob, the same for a given seed."""
     rng = np.random.default_rng(seed)
     noise = rng.normal(size=(size, size)).astype(np.float32)
-    smooth = cv2.GaussianBlur(noise, (0, 0), sigmaX=size / 8)
+    smooth = gaussian(noise, sigma=size / 8, mode="reflect")
     smooth = np.clip(smooth, None, 0.0)
     lo = smooth.min()
     return ((smooth - lo) / (smooth.max() - lo + 1e-12)).astype(np.float32)

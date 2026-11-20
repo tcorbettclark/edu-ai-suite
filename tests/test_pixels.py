@@ -24,12 +24,12 @@ def test_the_grid_size_is_the_only_thing_that_sets_the_count():
 
 
 def test_values_are_luminance_in_the_unit_range():
-    # A pure red pixel is 0.299 of the luma, whatever the exposure: brightness
+    # A pure red pixel is 0.2125 of the luma, whatever the exposure: brightness
     # is taken before the value range is normalised, so the row is comparable.
     image = np.zeros((2, 2, 3), dtype=np.float32)
     image[..., 0] = 1.0
     values, _ = pixel_row(image, 2)
-    assert np.allclose(values, 0.299, atol=1e-3)
+    assert np.allclose(values, 0.2125, atol=1e-3)  # rgb2gray's red coefficient
 
     dark = _rgb(4, 4, 0.0)
     bright = _rgb(4, 4, 1.0)
@@ -50,8 +50,11 @@ def test_the_frame_is_stretched_not_cropped():
     image[:, 0] = 1.0
     values, _ = pixel_row(image, 10)  # 40 source columns -> 10 cells of 4 pixels each
     grid = values.reshape(10, 10)
-    assert grid[:, 0].min() == pytest.approx(0.25)  # the stripe survives, on column 0
-    assert np.allclose(grid[:, 1:], 0.0)
+    # The anti-aliasing filter spreads the stripe over the neighbouring source
+    # columns, so a 4:1 shrink of it arrives at column 0 as 0.161 (a plain area
+    # average would give 0.25) and column 1 keeps 5.6e-4 of it.
+    assert grid[:, 0].min() == pytest.approx(0.161, abs=0.002)  # survives the shrink
+    assert np.allclose(grid[:, 1:], 0.0, atol=1e-3)
 
 
 @pytest.mark.parametrize("size", [0, -1, 2.5, True])

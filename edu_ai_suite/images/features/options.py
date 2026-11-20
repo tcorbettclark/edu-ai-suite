@@ -19,8 +19,9 @@ class FeatureOptions:
         Images are centre-cropped to a square and resized to
         ``working_size x working_size`` before feature computation.
         ``None`` keeps native resolution - and then the pixel-scale features
-        (``fine_texture``, ``coarse_texture``, ``autocorrelation_half_width``)
-        change meaning with the image size, because their windows are in pixels.
+        (``fine_texture``, ``coarse_texture``, ``autocorrelation_half_width``,
+        ``local_entropy``, ``band_amplitude``) change meaning with the image
+        size, because their windows are in pixels.
     centre_crop:
         Crop to the central square before resizing.
     contrast_normalise:

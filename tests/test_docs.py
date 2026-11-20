@@ -70,3 +70,16 @@ def test_the_prose_sweep_finds_the_names_it_is_meant_to_check():
     assert len(tokens) >= 12, sorted(tokens)
     assert "context_width" in tokens  # a name the glossary defines
     assert "mean_intensity" in tokens  # a feature the README names
+
+
+def test_readme_group_table_matches_the_catalogue():
+    """The reference table's counts come from the catalogue, not from memory."""
+    import re
+
+    from edu_ai_suite.images.features import GROUP_ORDER, features_of_group
+
+    rows = re.findall(r"^\| ([A-G]) \| (\d+) \|", (ROOT / "README.md").read_text(), re.MULTILINE)
+    assert [letter for letter, _ in rows] == list(GROUP_ORDER)
+    assert {letter: int(count) for letter, count in rows} == {
+        letter: len(features_of_group(letter)) for letter in GROUP_ORDER
+    }

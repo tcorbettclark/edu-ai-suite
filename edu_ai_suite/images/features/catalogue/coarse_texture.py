@@ -18,14 +18,13 @@ class CoarseTexture(Feature):
             "would lift the fine-texture feature does not lift this one."
         ),
         technical=(
-            "The image is reduced with INTER_AREA to one value per 16x16 block, and the "
-            "variance of those block means is reported. Downsampling by area averages each "
-            "block before the variance is taken, so fine-scale noise is suppressed and only "
-            "structure larger than the block survives. Pixel-scale in the same sense as "
-            "`fine_texture`."
+            "The image is reduced with block reduction to one mean per 16x16 block, and the "
+            "variance of those block means is reported. Averaging each block before the "
+            "variance is taken suppresses fine-scale noise, so only structure larger than the "
+            "block survives. Pixel-scale in the same sense as `fine_texture`."
         ),
         references=(
-            "[OpenCV: resize](https://docs.opencv.org/4.x/da/d54/group__imgproc__transform.html)",
+            "[scikit-image: block reduce](https://scikit-image.org/docs/0.26.x/api/skimage.measure.html#skimage.block_reduce)",
         ),
     )
 

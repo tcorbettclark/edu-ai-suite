@@ -1,12 +1,32 @@
 """An image resampled to a fixed square, the whole frame stretched, never cropped.
 
-Area averaging when an axis shrinks, bilinear when it grows, decided per axis.
+Resampling is bilinear. An axis that shrinks is anti-aliased with a Gaussian
+prefilter first and an axis that grows is not, decided per axis.
 """
 
 from __future__ import annotations
 
-import cv2
 import numpy as np
+from skimage.transform import resize
+
+
+def _resample(image: np.ndarray, shape: tuple[int, int], anti_aliasing: bool) -> np.ndarray:
+    """``image`` resampled to ``shape`` (rows, columns), as float32.
+
+    Trailing axes keep their size, so their resampling factor is one and the
+    anti-aliasing filter is not applied along them.
+    """
+    return np.ascontiguousarray(
+        resize(
+            image,
+            (*shape, *image.shape[2:]),
+            order=1,
+            mode="reflect",
+            preserve_range=True,
+            anti_aliasing=anti_aliasing,
+        ),
+        dtype=np.float32,
+    )
 
 
 def resize_square(image: np.ndarray, size: int) -> np.ndarray:
@@ -22,16 +42,15 @@ def resize_square(image: np.ndarray, size: int) -> np.ndarray:
         raise ValueError("empty image")
     if image.shape[:2] == (size, size):
         return np.ascontiguousarray(image)
-    # Each axis gets its own rule; cv2.resize's dsize is (width, height).
+    # Per-axis policy: an entry is True where that source axis shrinks.
     shrinking = tuple(size < axis for axis in image.shape[:2])
     if shrinking[0] == shrinking[1]:
-        interpolation = cv2.INTER_AREA if shrinking[0] else cv2.INTER_LINEAR
-        return cv2.resize(np.ascontiguousarray(image), (size, size), interpolation=interpolation)
-    # Mixed source: one axis shrinks, the other grows. Downsample first (area
-    # averaging), then grow what is left (bilinear) - exactly one axis each way.
-    image = np.ascontiguousarray(image)
+        return _resample(image, (size, size), anti_aliasing=shrinking[0])
+    # Mixed source: one axis shrinks, the other grows. Downsample first, then
+    # grow what is left - exactly one axis each way.
+    h, w = image.shape[:2]
     if shrinking[0]:
-        image = cv2.resize(image, (image.shape[1], size), interpolation=cv2.INTER_AREA)
+        image = _resample(image, (size, w), anti_aliasing=True)
     else:
-        image = cv2.resize(image, (size, image.shape[0]), interpolation=cv2.INTER_AREA)
-    return cv2.resize(image, (size, size), interpolation=cv2.INTER_LINEAR)
+        image = _resample(image, (h, size), anti_aliasing=True)
+    return _resample(image, (size, size), anti_aliasing=False)

@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+from skimage.measure import label
 
 from .._measurements import otsu_foreground
 from ..description import Description
@@ -22,22 +22,22 @@ class HoleCount(Feature):
         technical=(
             "Otsu's method thresholds the preprocessed luminance image and the brighter class "
             "is taken as foreground. Holes are 4-connected background components that do not "
-            "touch the image border, counted with cv2.connectedComponents. Polarity is fixed, "
+            "touch the image border, counted with 4-connected labelling. Polarity is fixed, "
             "so a dark object on a light background has no holes unless it is inverted first. "
             "A whole number, and exactly stable under small shifts for an unambiguous shape."
         ),
         references=(
             "[Otsu's method](https://en.wikipedia.org/wiki/Otsu%27s_method)",
-            "[OpenCV: connected components](https://docs.opencv.org/4.x/d3/dc0/group__imgproc__shape.html#gaedef8c7340499ca391d459122e51bef5)",
+            "[scikit-image: label](https://scikit-image.org/docs/0.26.x/api/skimage.measure.html#skimage.measure.label)",
         ),
     )
     is_count = True
 
     def compute(self, image: np.ndarray, options: FeatureOptions) -> float:
-        background = (~otsu_foreground(image)).astype(np.uint8)
-        n_labels, labels = cv2.connectedComponents(background, connectivity=4)
-        border = {
-            int(label)
-            for label in np.concatenate([labels[0, :], labels[-1, :], labels[:, 0], labels[:, -1]])
-        }
-        return float(sum(1 for label in range(1, n_labels) if label not in border))
+        background = ~otsu_foreground(image)
+        labels = label(background, connectivity=1)  # 1 means 4-connectivity
+        border = set(
+            np.concatenate([labels[0, :], labels[-1, :], labels[:, 0], labels[:, -1]]).tolist()
+        )
+        components = range(1, int(labels.max()) + 1)
+        return float(sum(1 for component in components if component not in border))
