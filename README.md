@@ -62,7 +62,7 @@ wheel contains the library.
 
 | Notebook | Shows | Needs |
 |---|---|---|
-| [Image features](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py) | the pixel pipeline, the catalogue, groups, extraction, ablation and the feature guide | - |
+| [Image features](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py) | three cloud photographs, every feature measured, and one feature's place in the catalogue at a time | - |
 | [Language models](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py) | cleaning, tokenizer, pairs, architecture, training, generation, evaluation and save/load | - |
 | [LoRA fine-tuning](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py) | data, options, run events, the artifact, and the adapter off and on | Apple Silicon and the `lora` extra |
 
@@ -73,10 +73,11 @@ wheel contains the library.
 [Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/image_features.html) ·
 [Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py)
 
-The notebook loads three CCSN cloud photographs, shows the luminance and resize steps,
-and reads the feature catalogue in groups. It then extracts a row, shows one feature's
-description, excludes a feature to show ablation, and opens the generated guide.
-Credits for the photographs are in `examples/CREDITS.md`.
+The notebook loads three CCSN cloud photographs and measures every feature of each.
+A previous/next selector tours the catalogue: it picks one feature, and the page under
+it shows that feature's value on all three photographs, the description of its group,
+and the feature's own summary, intuition, computation and further reading. Credits for
+the photographs are in `examples/CREDITS.md`.
 
 ### Language models
 
