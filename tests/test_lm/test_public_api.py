@@ -13,10 +13,12 @@ EXPECTED = frozenset(
     {
         "Architecture",
         "Bigram",
+        "CountingOptions",
         "EPOCH_STATS_KEYS",
         "LSTM",
         "LanguageModel",
         "MLP",
+        "SplitOptions",
         "Tokenizer",
         "TrainingOptions",
         "architectures",

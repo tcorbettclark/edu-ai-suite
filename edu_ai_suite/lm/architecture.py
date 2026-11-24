@@ -1,22 +1,36 @@
-"""The three from-scratch architectures: hyperparameters in, a Keras model out.
+"""The three from-scratch architectures, and how each one fills its weights.
 
 Bigram, MLP and LSTM share one input contract - a ``(context_width,)`` int32 context
-of token ids - and one output contract - logits over the vocabulary, so softmax
-lives in the loss and in the sampling loop. Each is a scikit-learn estimator that
-stores hyperparameters verbatim, so ``get_params`` enumerates a model's settings;
-the checks happen in :meth:`Architecture.build`. There is no transformer among
-them.
+of token ids - and one output contract - logits over the vocabulary, so softmax lives
+in the loss and in the sampling loop. Each is a scikit-learn estimator that stores
+hyperparameters verbatim, so ``get_params`` enumerates a model's settings; the checks
+happen in :meth:`Architecture.build`. Each also names the options object it is fitted
+with, and fills its own weights: Bigram counts them, the other two descend. There is
+no transformer among them.
 """
 
 from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import ClassVar
 
 import keras
 from sklearn.base import BaseEstimator
 
+from .counting import count_table
+from .pairs import Pairs
+from .stats import EpochStats
 from .tokenizer import SPECIAL_TOKENS
+from .training import (
+    CountingOptions,
+    SplitOptions,
+    TrainingOptions,
+    compile_keras_model,
+    fit_weights_by_optimizer,
+    loss_on,
+)
 
 
 class Architecture(BaseEstimator, ABC):
@@ -31,6 +45,11 @@ class Architecture(BaseEstimator, ABC):
     # tunable (MLP, LSTM), a constant where the architecture fixes it
     # (Bigram). The pair builder is told the same number, so data and model agree.
     context_width: int
+
+    #: The options object this architecture is fitted with. Each kind of fitting has
+    #: its own settings, and :meth:`~.language_model.LanguageModel.fit` refuses the
+    #: other kind rather than ignoring half of it.
+    options_type: ClassVar[type[SplitOptions]] = TrainingOptions
 
     def build(self, *, vocab_size: int, seed: int = 0) -> keras.Model:
         """Build the Keras model: ``(n, context_width)`` ids -> ``(n, vocab_size)`` logits.
@@ -56,15 +75,42 @@ class Architecture(BaseEstimator, ABC):
         arguments.
         """
 
+    def fit_weights(
+        self,
+        keras_model: keras.Model,
+        train: Pairs,
+        val: Pairs,
+        options: SplitOptions,
+        *,
+        on_epoch: Callable[[EpochStats], None] | None = None,
+        stop_requested: Callable[[], bool] | None = None,
+    ) -> tuple[float, float]:
+        """Fill the weights and report the ``(loss, val_loss)`` of the filled model.
+
+        Gradient descent here; :class:`Bigram` counts instead. ``train`` and ``val`` are
+        the one split every architecture gets, so the reported losses are comparable.
+        """
+        return fit_weights_by_optimizer(
+            keras_model,
+            train,
+            val,
+            options,
+            on_epoch=on_epoch,
+            stop_requested=stop_requested,
+        )
+
 
 class Bigram(Architecture):
-    """Next token from the current token alone: the count table, learned.
+    """Next token from the current token alone: the count table, counted.
 
-    Takes no hyperparameters, and its context width is the constant 1, so its pairs
-    must be built at width 1.
+    Takes no hyperparameter of its own, and its context width is the constant 1, so its
+    pairs must be built at width 1. Fitted by counting rather than by descent: with no
+    hidden layer the weights are the table, so one pass over the pairs finds them
+    exactly.
     """
 
     context_width = 1
+    options_type = CountingOptions
 
     def _keras_model(self, *, vocab_size: int) -> keras.Model:
         inputs = keras.Input(shape=(self.context_width,), dtype="int32", name="token_ids")
@@ -72,6 +118,37 @@ class Bigram(Architecture):
             keras.layers.Embedding(vocab_size, vocab_size, name="bigram_table")(inputs)
         )
         return keras.Model(inputs, logits, name=type(self).__name__)
+
+    def fit_weights(
+        self,
+        keras_model: keras.Model,
+        train: Pairs,
+        val: Pairs,
+        options: CountingOptions,
+        *,
+        on_epoch: Callable[[EpochStats], None] | None = None,
+        stop_requested: Callable[[], bool] | None = None,
+    ) -> tuple[float, float]:
+        """Count the table from the training pairs, then measure it.
+
+        There are no epochs, so the two hooks of an optimizer run are refused rather
+        than silently never called.
+        """
+        if on_epoch is not None or stop_requested is not None:
+            raise ValueError(
+                "a counted bigram has no epochs: on_epoch and stop_requested would never fire"
+            )
+        keras_model.set_weights(
+            [
+                count_table(
+                    train,
+                    vocab_size=keras_model.output_shape[-1],
+                    smoothing=options.smoothing,
+                )
+            ]
+        )
+        compile_keras_model(keras_model)  # the loss alone: nothing here is optimised
+        return loss_on(keras_model, train), loss_on(keras_model, val)
 
 
 class MLP(Architecture):

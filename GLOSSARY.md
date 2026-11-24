@@ -8,8 +8,8 @@
 - **decode**: `stream` → `text` — the reverse; BOS and EOS are dropped, `<unk>`
   stays literal.
 - **pair builder**: `stream` → `pairs` — one context and one target per prediction.
-- **fit**: `architecture` + `text` → a `model` — build the pairs, then the weights
-  that minimise the loss.
+- **fit**: `architecture` + `text` → a `model` — build the pairs, then the weights:
+  minimised by an optimizer, or counted for a bigram, which has no optimizer to run.
 - **model**: `context` → `logits` — one score per token in the vocabulary.
 - **sampler**: `logits` → `id` — one id per step of a generation.
 - **evaluate**: `model` + `text` → loss and perplexity, on any text. Report it on
@@ -148,8 +148,15 @@ context is padded out with BOS, or when a unit is shorter than `w`.
   the target, so `order = w + 1`. A bigram conditions on one token, so its order
   is fixed at 2; an `MLP` or `LSTM` order follows its context width.
 - **n-gram** — a model of order `n`, conditioning on `n - 1` ids: `Bigram` is
-  the `n = 2` member. `MLP` and `LSTM` are trainable relatives of the same
+  the `n = 2` member. `MLP` and `LSTM` are trained relatives of the same
   family, whose order is chosen instead of fixed.
+- **count table** — a bigram's weights: one row per context token, holding the
+  count of each token that followed it. `Bigram` fits by counting, so its table
+  is exact rather than descended towards.
+- **smoothing** — the `k` of add-`k`: every cell of the count table starts with
+  `k` invented observations, so a pair the corpus never contained is unlikely
+  rather than impossible. `1.0` is Laplace's rule of succession. It has no
+  default, because its value depends on the corpus and the vocabulary size.
 - **logits** — one score per token in the vocabulary, unnormalised.
 - **softmax** — turns logits into probabilities: positive and summing to one. It
   is applied in the loss and in the sampler, never in the Keras graph.
@@ -170,11 +177,12 @@ context is padded out with BOS, or when a unit is shorter than `w`.
 - **validation fraction** — the share of *units* held out for the split, not of
   pairs.
 - **seed** — the number a run's random choices are derived from: weight
-  initialisation and the split, so the same seed and inputs repeat a run.
+  initialisation, where there is one, and the split, so the same seed and inputs
+  repeat a run.
   `generate` takes a seed of its own for sampling.
 - **epoch** — one pass over all the training pairs. The per-epoch stats carry the
   loss, the validation loss and both perplexities, plus a sample if the caller's
-  hook adds one.
+  hook adds one. A counted bigram has none: its fit is one pass, not an epoch.
 - **prompt** — the user's text, tokenized and trimmed to its last unit, used as
   the first context of a generation.
 - **text stream** — a model's text as it is produced: a generator whose chunks a

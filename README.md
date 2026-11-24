@@ -18,7 +18,7 @@ Only the LoRA component needs MLX, and therefore Apple Silicon.
   `pixels`, and the `features` package built on them: one class per feature, the groups
   that select them, extraction, and the generated guide.
 - **`edu_ai_suite/lm/`** - the character and word tokenizers with their stats, pairs,
-  the bigram/MLP/LSTM architectures, training options and results, and `LanguageModel`,
+  the bigram/MLP/LSTM architectures, their fit options and results, and `LanguageModel`,
   which carries its tokenizer, so one directory holds everything a model needs.
 - **`edu_ai_suite/lora/`** - LoRA fine-tuning of an MLX base model: options, data, the
   train/validation split, the run, and the adapter and model objects that read it back.

@@ -6,6 +6,7 @@ These run in plain Python and need only the package's own dependencies.
 import json
 import math
 import os
+from collections import Counter
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # before any TF import
 
@@ -13,8 +14,10 @@ import numpy as np
 import pytest
 
 from edu_ai_suite.lm import (
+    CountingOptions,
     LanguageModel,
     TrainingOptions,
+    make_pairs,
     tokenizer_from_text,
 )
 from edu_ai_suite.lm.architecture import (
@@ -25,15 +28,18 @@ from edu_ai_suite.lm.architecture import (
     architectures,
 )
 from edu_ai_suite.lm.language_model import _sample
+from edu_ai_suite.lm.tokenizer import EOS_ID
 
 CORPUS = "the cat sat on the mat. the cat saw the dog. a dog and a cat ran."
 
 
-def fit(tokenizer, text, architecture, *, on_epoch=None, stop_requested=None, **options):
+def fit(
+    tokenizer, text, architecture, *, options=None, on_epoch=None, stop_requested=None, **settings
+):
     """A fitted ``LanguageModel`` for ``text``, in one call."""
     return LanguageModel(architecture, tokenizer).fit(
         text,
-        TrainingOptions(**options),
+        options if options is not None else TrainingOptions(**settings),
         on_epoch=on_epoch,
         stop_requested=stop_requested,
     )
@@ -102,7 +108,7 @@ def test_architectures_declare_only_their_own_parameters():
     }
     # Discovery, not registration: definition order, and a clear error for a typo.
     assert [(cls.architecture_name(), summary) for cls, summary in architectures()] == [
-        ("bigram", "Next token from the current token alone: the count table, learned."),
+        ("bigram", "Next token from the current token alone: the count table, counted."),
         ("mlp", "The whole context concatenated into one hidden layer."),
         ("lstm", "Recurrence: position is carried by state rather than by concatenation."),
     ]
@@ -159,12 +165,12 @@ def test_training_reduces_loss_and_reports_stats(tokenizer):
     results = model.results
     assert results.n_train_pairs + results.n_val_pairs == results.n_pairs_total
     assert results.n_val_pairs > 0 and results.n_train_pairs > 0
-    assert model.training.epochs == 12 and model.training.batch_size == 32
+    assert model.options.epochs == 12 and model.options.batch_size == 32
 
 
 def test_pairs_are_built_at_the_models_width(tokenizer):
     # The bigram has no width to ask for; the data follows the architecture.
-    bigram = fit(tokenizer, CORPUS, Bigram(), epochs=1, batch_size=32, seed=0)
+    bigram = fit(tokenizer, CORPUS, Bigram(), options=CountingOptions(smoothing=1.0, seed=0))
     assert bigram.context_width == 1  # read through the architecture, not stored
     assert bigram.keras_model.input_shape == (None, 1)
 
@@ -243,6 +249,61 @@ def test_training_options_and_split_are_validated():
         )
 
 
+# ---- counting ------------------------------------------------------------
+
+
+def test_the_bigram_is_fitted_by_counting(tokenizer):
+    """Every cell is log(count + smoothing) of the training split; nothing is descended."""
+    model = fit(tokenizer, CORPUS, Bigram(), options=CountingOptions(smoothing=0.5, seed=0))
+    table = model.keras_model.get_layer("bigram_table").get_weights()[0]
+    assert table.shape == (tokenizer.vocab_size, tokenizer.vocab_size)
+
+    train, _ = make_pairs(tokenizer.encode(CORPUS), 1).split(0.1, seed=0)
+    counts = Counter(zip(train.contexts[:, 0].tolist(), train.targets.tolist(), strict=True))
+    assert counts  # the test is about cells the pairs do contain
+    for (previous, following), count in counts.items():
+        assert float(table[previous, following]) == pytest.approx(math.log(count + 0.5))
+
+
+def test_eos_never_precedes_a_target_so_its_row_stays_uniform(tokenizer):
+    # Counting has no random initialisation to leave behind: a row with no counts is
+    # the smoothing constant in every cell, which is a uniform distribution.
+    model = fit(tokenizer, CORPUS, Bigram(), options=CountingOptions(smoothing=0.5, seed=0))
+    table = model.keras_model.get_layer("bigram_table").get_weights()[0]
+    assert len(set(table[EOS_ID].tolist())) == 1
+
+
+def test_a_counted_fit_refuses_the_epoch_hooks(tokenizer):
+    options = CountingOptions(smoothing=1.0)
+    with pytest.raises(ValueError, match="no epochs"):
+        fit(tokenizer, CORPUS, Bigram(), options=options, on_epoch=lambda stats: None)
+    with pytest.raises(ValueError, match="no epochs"):
+        fit(tokenizer, CORPUS, Bigram(), options=options, stop_requested=lambda: True)
+
+
+def test_each_architecture_is_fitted_with_its_own_options(tokenizer):
+    with pytest.raises(TypeError, match="CountingOptions, not TrainingOptions"):
+        fit(tokenizer, CORPUS, Bigram(), options=TrainingOptions(epochs=1))
+    with pytest.raises(TypeError, match="TrainingOptions, not CountingOptions"):
+        fit(tokenizer, CORPUS, MLP(context_width=4), options=CountingOptions(smoothing=1.0))
+
+
+def test_counting_options_require_a_smoothing():
+    with pytest.raises(TypeError, match="smoothing"):
+        CountingOptions()  # no default: the corpus decides what k is
+    with pytest.raises(ValueError, match="smoothing"):
+        CountingOptions(smoothing=0.0)
+
+
+def test_a_counted_model_keeps_its_smoothing(tokenizer, tmp_path):
+    model = fit(tokenizer, CORPUS, Bigram(), options=CountingOptions(smoothing=0.25, seed=0))
+    loaded = LanguageModel.load(model.save(tmp_path / "counted.nnlm"))
+    assert loaded.options == CountingOptions(smoothing=0.25, seed=0)
+    assert loaded.evaluate("the cat sat.")["perplexity"] == pytest.approx(
+        model.evaluate("the cat sat.")["perplexity"]
+    )
+
+
 # ---- sampling ------------------------------------------------------------
 
 
@@ -279,7 +340,7 @@ def test_word_level_generate_smoke():
     tok = tokenizer_from_text(CORPUS, "word")
     # The bigram has no width parameter: it trains and generates at width 1,
     # with no input trimming anywhere and nothing to validate.
-    model = fit(tok, CORPUS, Bigram(), epochs=8, batch_size=16, seed=0)
+    model = fit(tok, CORPUS, Bigram(), options=CountingOptions(smoothing=1.0, seed=0))
     assert model.context_width == 1
     out = model.generate("the", temperature=0, max_new_tokens=6)
     assert out.startswith("the")
@@ -292,9 +353,9 @@ def test_generate_rejects_a_negative_temperature(mlp_model):
 
 def test_fit_on_empty_text_says_so(tokenizer):
     with pytest.raises(ValueError, match="empty"):
-        fit(tokenizer, "", Bigram())
+        fit(tokenizer, "", Bigram(), options=CountingOptions(smoothing=1.0))
     with pytest.raises(ValueError, match="empty"):
-        LanguageModel(Bigram(), tokenizer).fit("  \n  ", TrainingOptions(epochs=1))
+        LanguageModel(Bigram(), tokenizer).fit("  \n  ", CountingOptions(smoothing=1.0))
 
 
 def test_sample_temperature_zero_is_argmax():
@@ -322,7 +383,7 @@ def test_save_load_round_trip(mlp_model, tmp_path):
     assert (path / "model.keras").exists() and (path / "meta.json").exists()
     loaded = LanguageModel.load(path)
     assert loaded.tokenizer.tokens == mlp_model.tokenizer.tokens
-    assert loaded.training == mlp_model.training
+    assert loaded.options == mlp_model.options
     assert loaded.results == mlp_model.results
     assert loaded.parameter_count() == mlp_model.parameter_count()
     # deterministic comparison at greedy temperature: identical generations

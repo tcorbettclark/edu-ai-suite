@@ -1,7 +1,7 @@
-"""The trained language-model object: an architecture with a tokenizer and weights.
+"""The fitted language-model object: an architecture with a tokenizer and weights.
 
-:class:`LanguageModel` trains on a text, generates a unit, evaluates a text, and
-saves its weights and tokenizer as one directory. Its ``generate`` signature is the
+:class:`LanguageModel` fits on a text, generates a unit, evaluates a text, and saves
+its weights and tokenizer as one directory. Its ``generate`` signature is the
 convention the MLX/LoRA models share.
 """
 
@@ -20,12 +20,7 @@ from .architecture import Architecture, architecture_from_dict
 from .pairs import make_pairs
 from .stats import EpochStats
 from .tokenizer import BOS_ID, EOS_ID, Tokenizer, stream_units, tokenizer_from_dict
-from .training import (
-    TrainingOptions,
-    TrainingResults,
-    compile_keras_model,
-    epoch_callback,
-)
+from .training import SplitOptions, TrainingResults, compile_keras_model, loss_on
 
 #: The model directory's own record. The name is shared with the LoRA artifact's, so the
 #: record names the package that wrote it - and :meth:`LanguageModel.load` rejects one
@@ -63,14 +58,14 @@ def _sample(logits: np.ndarray, temperature: float, rng: np.random.Generator) ->
 class LanguageModel:
     """An architecture with a tokenizer and weights: fit it, generate from it.
 
-    ``keras_model``, ``training`` and ``results`` are None until :meth:`fit` is
-    called, and generating or scoring before that raises.
+    ``keras_model``, ``options`` and ``results`` are None until :meth:`fit` is called,
+    and generating or scoring before that raises.
     """
 
     architecture: Architecture
     tokenizer: Tokenizer
     keras_model: keras.Model | None = None
-    training: TrainingOptions | None = None
+    options: SplitOptions | None = None
     results: TrainingResults | None = None
 
     # ---- numbers that belong to the architecture ---------------------------
@@ -87,52 +82,51 @@ class LanguageModel:
             raise RuntimeError("the model is not fitted: call fit() first")
         return self.keras_model
 
-    # ---- training ----------------------------------------------------------
+    # ---- fitting -----------------------------------------------------------
 
     def fit(
         self,
         text: str,
-        options: TrainingOptions | None = None,
+        options: SplitOptions,
         *,
         on_epoch: Callable[[EpochStats], None] | None = None,
         stop_requested: Callable[[], bool] | None = None,
     ) -> LanguageModel:
-        """Train on one text and return self, so the call can be chained.
+        """Fit the architecture to one text and return self, so the call can be chained.
 
-        The split is made once, by unit, so the same units are held out in every epoch.
-        ``self.keras_model`` is assigned before the first epoch, so an ``on_epoch`` hook
-        may generate from the model as it stands.
+        ``options`` is the architecture's own settings object - :class:`TrainingOptions`
+        for the models an optimizer fits, :class:`CountingOptions` for the bigram - and
+        the other kind is refused. The split is made once, by unit, so the same units are
+        held out for every architecture. ``self.keras_model`` is assigned before the
+        weights are filled, so an ``on_epoch`` hook may generate from it as it stands.
         """
-        options = options if options is not None else TrainingOptions()
+        if not isinstance(options, self.architecture.options_type):
+            raise TypeError(
+                f"{type(self.architecture).__name__} is fitted with "
+                f"{self.architecture.options_type.__name__}, not {type(options).__name__}"
+            )
         pairs = make_pairs(self.tokenizer.encode(text), self.context_width)
         train, val = pairs.split(options.validation_fraction, seed=options.seed)
 
-        self.keras_model = compile_keras_model(
-            self.architecture.build(vocab_size=self.tokenizer.vocab_size, seed=options.seed),
-            options.learning_rate,
+        self.keras_model = self.architecture.build(
+            vocab_size=self.tokenizer.vocab_size, seed=options.seed
+        )
+        loss, val_loss = self.architecture.fit_weights(
+            self.keras_model,
+            train,
+            val,
+            options,
+            on_epoch=on_epoch,
+            stop_requested=stop_requested,
         )
 
-        callbacks = []
-        if on_epoch is not None or stop_requested is not None:
-            callbacks.append(epoch_callback(on_epoch=on_epoch, stop_requested=stop_requested))
-
-        history = self.keras_model.fit(
-            train.contexts,
-            train.targets,
-            validation_data=(val.contexts, val.targets),
-            epochs=options.epochs,
-            batch_size=options.batch_size,
-            callbacks=callbacks,
-            verbose=0,
-        ).history
-
-        self.training = options
+        self.options = options
         self.results = TrainingResults(
             n_pairs_total=len(pairs),
             n_train_pairs=len(train),
             n_val_pairs=len(val),
-            final_loss=float(history["loss"][-1]),
-            final_val_loss=float(history["val_loss"][-1]),
+            final_loss=loss,
+            final_val_loss=val_loss,
         )
         return self
 
@@ -195,14 +189,7 @@ class LanguageModel:
         """
         keras_model = self._fitted
         pairs = make_pairs(self.tokenizer.encode(text), self.context_width)
-        loss = float(
-            keras_model.evaluate(
-                pairs.contexts,
-                pairs.targets,
-                batch_size=batch_size,
-                verbose=0,
-            )
-        )
+        loss = loss_on(keras_model, pairs, batch_size)
         return {"loss": loss, "perplexity": math.exp(loss)}
 
     def parameter_count(self) -> int:
@@ -223,7 +210,7 @@ class LanguageModel:
             "created_by": _CREATED_BY,
             "architecture_name": self.architecture.architecture_name(),
             "architecture_params": self.architecture.get_params(),
-            "training": asdict(self.training) if self.training is not None else None,
+            "fit_options": asdict(self.options) if self.options is not None else None,
             "results": asdict(self.results) if self.results is not None else None,
             "tokenizer": self.tokenizer.to_dict(),
         }
@@ -235,8 +222,10 @@ class LanguageModel:
     def load(cls, path: str | Path) -> LanguageModel:
         """Load a model directory written by :meth:`save`.
 
-        A ``meta.json`` written by any other package raises, rather than being read for
-        whatever of its keys happen to match.
+        The weights and the record come from the directory, and the loss the code
+        defines is attached to them, so a model saved by a counted fit - which has no
+        optimizer to restore - loads like any other. A ``meta.json`` written by any other
+        package raises, rather than being read for whatever of its keys happen to match.
         """
         src = Path(path)
         meta = json.loads((src / _META_FILE).read_text())
@@ -246,10 +235,14 @@ class LanguageModel:
                 f"{src} was written by {creator!r}, not by {_CREATED_BY}: "
                 "not a Keras language model"
             )
+        architecture = architecture_from_dict(meta)
+        options = meta.get("fit_options")
         return cls(
-            architecture=architecture_from_dict(meta),
+            architecture=architecture,
             tokenizer=tokenizer_from_dict(meta["tokenizer"]),
-            keras_model=keras.models.load_model(src / _MODEL_FILE),
-            training=(TrainingOptions(**meta["training"]) if meta.get("training") else None),
+            keras_model=compile_keras_model(
+                keras.models.load_model(src / _MODEL_FILE, compile=False)
+            ),
+            options=(architecture.options_type(**options) if options else None),
             results=(TrainingResults(**meta["results"]) if meta.get("results") else None),
         )
