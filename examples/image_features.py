@@ -4,6 +4,7 @@ Press n for the next feature, p for the previous one, q to quit.
 Run it with ``uv run python examples/image_features.py``.
 """
 
+import re
 import sys
 import termios
 import tty
@@ -25,7 +26,9 @@ PHOTOGRAPHS = {
     "Volutus": "volutus.jpg",
     "Low cloud": "low_cloud.jpg",
 }
-START = "edge_density"
+
+# ANSI: erase the screen and return the cursor to the top left.
+CLEAR_SCREEN = "\033[2J\033[H"
 
 here = Path(__file__).parent
 feature_names = all_feature_names()
@@ -51,21 +54,24 @@ def read_key():
         termios.tcsetattr(fd, termios.TCSADRAIN, before)
 
 
-index = feature_names.index(START)
+index = 0
 while True:
     name = feature_names[index]
     description = get_feature(name).description
     group = get_group(group_of(name))
 
-    print(f"\n{index + 1}/{len(feature_names)}  {description.title} ({name})")
+    print(CLEAR_SCREEN, end="")
+    print(f"{index + 1}/{len(feature_names)}  {description.title} ({name})")
     print(f"Group {group.letter}: {group.title}")
     print(f"{description.summary}\n")
     for photo, row in measurements.items():
-        print(f"  {photo:<10} {row[name]:>10.4g}")
+        print(f"  {photo:<10} {row[name]:>10.4f}")
     print(f"\nIntuition: {description.intuition}")
-    print(f"Technical: {description.technical}")
+    print(f"\nTechnical: {description.technical}")
     if description.references:
-        print("Further reading: " + ", ".join(description.references))
+        print("\nFurther reading:")
+        for reference in description.references:
+            print("  -", re.search(r"\((https?://[^)]+)\)", reference).group(1))
     print("\nn next, p previous, q quit: ", end="", flush=True)
 
     key = read_key()
