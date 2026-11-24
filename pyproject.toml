@@ -45,9 +45,6 @@ lora = [
 [dependency-groups]
 dev = [
     "pytest>=8",
-    "marimo>=0.25.2",
-    "altair>=5",
-    "playwright>=1.50",
 ]
 
 [project.scripts]
