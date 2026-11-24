@@ -26,9 +26,8 @@ Only the LoRA component needs MLX, and therefore Apple Silicon.
   splitting, and Q/A parsing, behind one facade.
 - **`edu_ai_suite/assets/`** - the Hugging Face assets, each behind a download function
   that caches and verifies it, and the command-line interface over them.
-- **`examples/`** - the LoRA marimo notebook, and a plain script each for the image
-  features and the three language models, with their photographs and text file.
-- **`scripts/notebooks.py`** - runs the notebooks and writes the README screenshots.
+- **`examples/`** - a plain script each for the image features, LoRA and the three
+  language models, with their photographs and text file.
 - **`tests/`** - the test suite, in plain Python.
 - **`GLOSSARY.md`** - definitions of key words.
 
@@ -55,15 +54,9 @@ uv build
 
 ## Examples
 
-One marimo notebook, and four plain scripts: one for the image features and one per
-language-model architecture. The notebook is runnable in the browser, and the screenshot
-below is a short view of it with code and outputs: click it, or the link below it, for
-the full static page. The examples live in the repository; the wheel contains the
-library.
-
-| Notebook | Shows | Needs |
-|---|---|---|
-| [LoRA fine-tuning](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py) | data, options, run events, the artifact, and the adapter off and on | Apple Silicon and the `lora` extra |
+Five plain scripts, one per subject. Each keeps its settings as constants at the top,
+takes no arguments, and prints the steps it takes, so it can be read top to bottom. They
+live in the repository; the wheel contains the library.
 
 ### Image features
 
@@ -89,16 +82,10 @@ credit for the text is in `examples/CREDITS.md`.
 
 ### LoRA fine-tuning
 
-[![The LoRA notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/lora.png)](https://tcorbettclark.github.io/edu-ai-suite/notebooks/lora.html)
-
-[Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/lora.html) ·
-[Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py)
-
-The notebook fetches the pinned 4-bit BritLLM model, turns the cloud corpus into rows,
-and trains an adapter. It shows the run's events, saves the artifact, then loads it and
-compares the base model with the adapter on generation and perplexity. The training
-button runs a short job; the rest of the notebook works with an artifact from that run
-or from a directory you paste in.
+`examples/lora.py` fetches the pinned 4-bit BritLLM model, turns a corpus of cloud
+sentences into rows, and trains an adapter, printing the run's events as they arrive. It
+saves the artifact, loads it back, and compares the base model with the adapter on
+generation and perplexity. It needs Apple Silicon and the `lora` extra.
 
 ## Running the examples
 
@@ -106,12 +93,6 @@ From a clone of the repository:
 
 ```bash
 uv sync
-uv run marimo edit examples/
-```
-
-The notebook runs as a script too, and so do the four plain ones:
-
-```bash
 uv run python examples/image_features.py
 uv run --extra lora python examples/lora.py
 uv run python examples/train_bigram.py
@@ -119,8 +100,9 @@ uv run python examples/train_mlp.py
 uv run python examples/train_lstm.py
 ```
 
-The notebooks need `marimo`; the package itself does not. The developer environment
-installs it, and the LoRA notebook needs the same extra as the rest of LoRA.
+`image_features.py` tours its features on single keypresses and needs a terminal. `lora.py`
+needs the LoRA extra and a downloaded base model; the others need nothing beyond the
+package.
 
 ## Reference
 
@@ -180,24 +162,6 @@ assets fetch ccsn-clouds
 ```
 
 The same interface is available as `python -m edu_ai_suite.assets`.
-
-### Notebook tooling
-
-`scripts/notebooks.py` runs the examples and regenerates the screenshots:
-
-```bash
-uv run python scripts/notebooks.py check
-uv run --extra lora python scripts/notebooks.py run
-uv run --extra lora python scripts/notebooks.py screenshots
-```
-
-`check` runs `marimo check --strict`; `run` executes every notebook through a temporary
-HTML export; `screenshots` writes the hero PNG to `docs/screenshots/<name>.png` and the
-full static page to `docs/notebooks/<name>.html`. Use `--only NAME` to work on one
-notebook. GitHub Pages serves `docs/` at `https://tcorbettclark.github.io/edu-ai-suite/`,
-which is where the README's full-notebook links point. The screenshots use Playwright
-with Chromium, falling back to a system Chrome; install the browser with
-`uv run playwright install chromium` if needed.
 
 ## License
 

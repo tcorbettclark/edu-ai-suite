@@ -122,22 +122,14 @@ before merging, so the shape is checked rather than assumed.
 - Would a newcomer reading only the file names and the docstrings arrive at the same
   mental model you have? If not, the code says one thing and the words another.
 
-## Notebooks
+## Examples
 
-The examples are marimo notebooks. They are the runnable examples and the source of the
-README screenshots; do not add a parallel script for the same subject.
+The examples are plain scripts in `examples/`, one per subject: the image features, the
+three language models, and LoRA. Each is the runnable example for its subject, with its
+settings as constants at the top and no arguments.
 
-- Open them with `uv run marimo edit examples/`.
-- Check them with `uv run python scripts/notebooks.py check`.
-- Run them with `uv run --extra lora python scripts/notebooks.py run`.
-- Regenerate the hero screenshots and the full HTML pages with
-  `uv run --extra lora python scripts/notebooks.py screenshots`.
-
-The screenshots are short views; their full static pages live in `docs/notebooks/` and
-are served by GitHub Pages. The `marimo-notebook` skill is vendored under
-`.agents/skills/` for agents that write these notebooks. It comes from
-[marimo-team/skills](https://github.com/marimo-team/skills)
-under the Apache License 2.0; the licence and source commit are in that directory and in
-`skills-lock.json`. Update it with `npx skills update marimo-notebook --project`; do not
-edit the vendored skill by hand. The skill is a development aid: the notebooks and the
-package do not depend on it.
+- Run one with `uv run python examples/<name>.py`, and the LoRA one with
+  `uv run --extra lora python examples/lora.py`.
+- Read one top to bottom: if a step needs a function, it is a step with its own failure
+  modes and belongs in the library, not in the script.
+- `examples/CREDITS.md` records where the photographs and the text come from.

@@ -22,4 +22,4 @@ Please cite:
 `happy_prince.txt` is Oscar Wilde's *The Happy Prince and Other Tales* (1910), from
 [Project Gutenberg eBook #902](https://www.gutenberg.org/ebooks/902). The text is in
 the public domain in the United States. The file keeps Project Gutenberg's header and
-footer; the language-model notebook strips them with `clean_text`.
+footer; the language-model scripts strip them with `clean_text`.
