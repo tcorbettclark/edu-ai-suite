@@ -1,7 +1,7 @@
 """Train a small LSTM language model on one story, then sample and score text.
 
 The LSTM reads the context one id at a time, carrying a hidden state between ids.
-Run it with ``uv run python scripts/train_lstm.py``.
+Run it with ``uv run python examples/train_lstm.py``.
 """
 
 from pathlib import Path
@@ -27,7 +27,7 @@ OUT_OF_DOMAIN_TEXT = "quantum chromodynamics is a theory of quarks"
 print("Create the corpus")
 # Consists of Oscar Wilde's The Happy Prince and Other Tales, cleaned of the
 # Project Gutenberg wrapper and cut to the first sentence of the story.
-story_file = Path(__file__).resolve().parents[1] / "examples" / "happy_prince.txt"
+story_file = Path(__file__).with_name("happy_prince.txt")
 raw_text = story_file.read_text(encoding="utf-8")
 cleaned = clean_text(raw_text, CleanOptions(strip_gutenberg=True, reflow=True))
 corpus = cleaned.text[cleaned.text.find("HIGH above the city") :]

@@ -1,7 +1,9 @@
-"""The examples are marimo notebooks, and the README points at each one.
+"""The examples are two marimo notebooks and three plain scripts.
 
-The notebooks are the runnable examples; the screenshots are their rendered form.
-This test keeps the directory, the README links and the screenshot files in step.
+The notebooks are the image and LoRA walkthroughs, with screenshots as their rendered
+form; the scripts are the language models, one per architecture, and the README names
+each of them. This test keeps the directory, the README links and the generated files
+in step.
 """
 
 import ast
@@ -15,16 +17,17 @@ HTML_PAGES = ROOT / "docs" / "notebooks"
 README = ROOT / "README.md"
 PAGES_URL = "https://tcorbettclark.github.io/edu-ai-suite/notebooks"
 
-NOTEBOOKS = ("image_features", "language_models", "lora")
+NOTEBOOKS = ("image_features", "lora")
+SCRIPTS = ("train_bigram", "train_mlp", "train_lstm")
 
 
-def test_examples_hold_exactly_the_three_notebooks():
+def test_examples_hold_the_notebooks_and_the_language_model_scripts():
     assert sorted(path.name for path in EXAMPLES.glob("*.py")) == sorted(
-        f"{name}.py" for name in NOTEBOOKS
+        f"{name}.py" for name in NOTEBOOKS + SCRIPTS
     )
 
 
-def test_every_example_is_a_marimo_notebook():
+def test_every_notebook_is_a_marimo_notebook():
     for name in NOTEBOOKS:
         path = EXAMPLES / f"{name}.py"
         tree = ast.parse(path.read_text())
@@ -38,6 +41,33 @@ def test_every_example_is_a_marimo_notebook():
             for node in tree.body
         ), path.name
         assert "@app.cell" in path.read_text(), path.name
+
+
+def _imported_modules(path: pathlib.Path) -> set[str]:
+    """The top-level module names a file imports."""
+    names = set()
+    for node in ast.walk(ast.parse(path.read_text())):
+        if isinstance(node, ast.Import):
+            names.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0:
+            names.add((node.module or "").split(".")[0])
+    return names
+
+
+def test_every_script_takes_no_arguments_and_has_no_notebook_machinery():
+    # A reader follows a script top to bottom: the settings are constants, and nothing
+    # reads the command line or a cell runtime.
+    for name in SCRIPTS:
+        path = EXAMPLES / f"{name}.py"
+        assert path.is_file(), path
+        assert not ({"marimo", "argparse", "sys"} & _imported_modules(path)), path.name
+        assert "sys.argv" not in path.read_text(), path.name
+
+
+def test_the_readme_names_every_script():
+    readme = README.read_text()
+    for name in SCRIPTS:
+        assert f"examples/{name}.py" in readme, name
 
 
 def _png_size(path: pathlib.Path) -> tuple[int, int]:
@@ -79,12 +109,8 @@ def test_the_language_model_corpus_is_present():
     assert len(path.read_text()) > 1_000
 
 
-def test_the_maintainer_script_and_the_marimo_skill_are_present():
+def test_the_maintainer_script_is_present():
     assert (ROOT / "scripts" / "build_britllm_4bit.py").is_file()
-    skill = ROOT / ".agents" / "skills" / "marimo-notebook"
-    assert (skill / "SKILL.md").is_file()
-    assert (skill / "LICENSE").is_file()
-    assert (ROOT / "skills-lock.json").is_file()
 
 
 def test_the_old_scripts_are_gone():

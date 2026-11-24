@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
 SCREENSHOTS = ROOT / "docs" / "screenshots"
 HTML_PAGES = ROOT / "docs" / "notebooks"
-NOTEBOOKS = ("image_features", "language_models", "lora")
+NOTEBOOKS = ("image_features", "lora")
 TIMEOUT_SECONDS = 600
 HERO_WIDTH = 1_000
 HERO_HEIGHT = 1_500
@@ -24,7 +24,6 @@ HERO_HEIGHT = 1_500
 #: The section a short README screenshot starts at; None keeps the top of the page.
 HERO_TARGETS = {
     "image_features": None,
-    "language_models": "Training",
     "lora": "Data",
 }
 

@@ -26,8 +26,8 @@ Only the LoRA component needs MLX, and therefore Apple Silicon.
   splitting, and Q/A parsing, behind one facade.
 - **`edu_ai_suite/assets/`** - the Hugging Face assets, each behind a download function
   that caches and verifies it, and the command-line interface over them.
-- **`examples/`** - three marimo notebooks, one per subject, with their photographs and
-  text file.
+- **`examples/`** - two marimo notebooks and one plain script per language-model
+  architecture, with their photographs and text file.
 - **`scripts/notebooks.py`** - runs the notebooks and writes the README screenshots.
 - **`tests/`** - the test suite, in plain Python.
 - **`GLOSSARY.md`** - definitions of key words.
@@ -53,17 +53,16 @@ uv run pytest
 uv build
 ```
 
-## Notebooks
+## Examples
 
-The examples are marimo notebooks. Each notebook is the runnable example, and the
-screenshot below is a short view of it with code and outputs. Click the screenshot, or
-the link below it, for the full static page. The notebooks live in the repository; the
-wheel contains the library.
+Two marimo notebooks, and three plain scripts for the language models. Each notebook is
+runnable in the browser, and the screenshot below is a short view of it with code and
+outputs: click it, or the link below it, for the full static page. The examples live in
+the repository; the wheel contains the library.
 
 | Notebook | Shows | Needs |
 |---|---|---|
 | [Image features](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py) | three cloud photographs, every feature measured, and one feature's place in the catalogue at a time | - |
-| [Language models](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py) | cleaning, tokenizer, pairs, architecture, training, generation, evaluation and save/load | - |
 | [LoRA fine-tuning](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py) | data, options, run events, the artifact, and the adapter off and on | Apple Silicon and the `lora` extra |
 
 ### Image features
@@ -81,16 +80,18 @@ the photographs are in `examples/CREDITS.md`.
 
 ### Language models
 
-[![The language-models notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/language_models.png)](https://tcorbettclark.github.io/edu-ai-suite/notebooks/language_models.html)
+Three plain scripts, one per architecture, each standalone with its settings as
+constants at the top:
 
-[Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/language_models.html) ·
-[Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/language_models.py)
+- `examples/train_bigram.py` counts the table of one token followed by another.
+- `examples/train_mlp.py` trains the whole context concatenated into one hidden layer.
+- `examples/train_lstm.py` trains a recurrent model that reads the context one id at a
+  time.
 
-The notebook cleans Oscar Wilde's *The Happy Prince and Other Tales* (Project Gutenberg
-#902, public domain), builds a character or word tokenizer, shows the pair table, and
-trains one of `Bigram`, `MLP` or `LSTM`. It then generates text, scores in-domain and
-out-of-domain text, and saves and reloads the model. The source and its credit are in
-`examples/happy_prince.txt` and `examples/CREDITS.md`.
+Each cleans Oscar Wilde's *The Happy Prince and Other Tales* (Project Gutenberg #902,
+public domain) from `examples/happy_prince.txt`, builds a word tokenizer, fits its model,
+then samples text at two temperatures and scores in-domain and out-of-domain text. The
+credit for the text is in `examples/CREDITS.md`.
 
 ### LoRA fine-tuning
 
@@ -105,7 +106,7 @@ compares the base model with the adapter on generation and perplexity. The train
 button runs a short job; the rest of the notebook works with an artifact from that run
 or from a directory you paste in.
 
-## Running the notebooks
+## Running the examples
 
 From a clone of the repository:
 
@@ -114,12 +115,14 @@ uv sync
 uv run marimo edit examples/
 ```
 
-Each notebook also runs as a script:
+Each notebook also runs as a script, and the language-model scripts run directly:
 
 ```bash
 uv run python examples/image_features.py
-uv run python examples/language_models.py
 uv run --extra lora python examples/lora.py
+uv run python examples/train_bigram.py
+uv run python examples/train_mlp.py
+uv run python examples/train_lstm.py
 ```
 
 The notebooks need `marimo`; the package itself does not. The developer environment
