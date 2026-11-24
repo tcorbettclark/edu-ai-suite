@@ -1,4 +1,4 @@
-"""The examples are two marimo notebooks and three plain scripts.
+"""The examples are one marimo notebook and four plain scripts.
 
 The notebooks are the image and LoRA walkthroughs, with screenshots as their rendered
 form; the scripts are the language models, one per architecture, and the README names
@@ -17,8 +17,8 @@ HTML_PAGES = ROOT / "docs" / "notebooks"
 README = ROOT / "README.md"
 PAGES_URL = "https://tcorbettclark.github.io/edu-ai-suite/notebooks"
 
-NOTEBOOKS = ("image_features", "lora")
-SCRIPTS = ("train_bigram", "train_mlp", "train_lstm")
+NOTEBOOKS = ("lora",)
+SCRIPTS = ("image_features", "train_bigram", "train_mlp", "train_lstm")
 
 
 def test_examples_hold_the_notebooks_and_the_language_model_scripts():
@@ -60,7 +60,7 @@ def test_every_script_takes_no_arguments_and_has_no_notebook_machinery():
     for name in SCRIPTS:
         path = EXAMPLES / f"{name}.py"
         assert path.is_file(), path
-        assert not ({"marimo", "argparse", "sys"} & _imported_modules(path)), path.name
+        assert not ({"marimo", "argparse"} & _imported_modules(path)), path.name
         assert "sys.argv" not in path.read_text(), path.name
 
 

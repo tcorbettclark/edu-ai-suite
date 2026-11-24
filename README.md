@@ -26,8 +26,8 @@ Only the LoRA component needs MLX, and therefore Apple Silicon.
   splitting, and Q/A parsing, behind one facade.
 - **`edu_ai_suite/assets/`** - the Hugging Face assets, each behind a download function
   that caches and verifies it, and the command-line interface over them.
-- **`examples/`** - two marimo notebooks and one plain script per language-model
-  architecture, with their photographs and text file.
+- **`examples/`** - the LoRA marimo notebook, and a plain script each for the image
+  features and the three language models, with their photographs and text file.
 - **`scripts/notebooks.py`** - runs the notebooks and writes the README screenshots.
 - **`tests/`** - the test suite, in plain Python.
 - **`GLOSSARY.md`** - definitions of key words.
@@ -55,28 +55,22 @@ uv build
 
 ## Examples
 
-Two marimo notebooks, and three plain scripts for the language models. Each notebook is
-runnable in the browser, and the screenshot below is a short view of it with code and
-outputs: click it, or the link below it, for the full static page. The examples live in
-the repository; the wheel contains the library.
+One marimo notebook, and four plain scripts: one for the image features and one per
+language-model architecture. The notebook is runnable in the browser, and the screenshot
+below is a short view of it with code and outputs: click it, or the link below it, for
+the full static page. The examples live in the repository; the wheel contains the
+library.
 
 | Notebook | Shows | Needs |
 |---|---|---|
-| [Image features](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py) | three cloud photographs, every feature measured, and one feature's place in the catalogue at a time | - |
 | [LoRA fine-tuning](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/lora.py) | data, options, run events, the artifact, and the adapter off and on | Apple Silicon and the `lora` extra |
 
 ### Image features
 
-[![The image-features notebook](https://raw.githubusercontent.com/tcorbettclark/edu-ai-suite/main/docs/screenshots/image_features.png)](https://tcorbettclark.github.io/edu-ai-suite/notebooks/image_features.html)
-
-[Open the full static notebook](https://tcorbettclark.github.io/edu-ai-suite/notebooks/image_features.html) ·
-[Source](https://github.com/tcorbettclark/edu-ai-suite/blob/main/examples/image_features.py)
-
-The notebook loads three CCSN cloud photographs and measures every feature of each.
-A previous/next selector tours the catalogue: it picks one feature, and the page under
-it shows that feature's value on all three photographs, the description of its group,
-and the feature's own summary, intuition, computation and further reading. Credits for
-the photographs are in `examples/CREDITS.md`.
+`examples/image_features.py` loads three CCSN cloud photographs and measures every
+feature of each, then tours the catalogue one feature at a time: its value on all three
+photographs, the group it belongs to, and its own words. `n` shows the next feature, `p`
+the previous one, `q` quits. Credits for the photographs are in `examples/CREDITS.md`.
 
 ### Language models
 
@@ -115,7 +109,7 @@ uv sync
 uv run marimo edit examples/
 ```
 
-Each notebook also runs as a script, and the language-model scripts run directly:
+The notebook runs as a script too, and so do the four plain ones:
 
 ```bash
 uv run python examples/image_features.py
@@ -148,8 +142,8 @@ group, and the grouping never touches the feature itself.
 | G | 7 | Colour (opt-in): bluish fraction, the blue-red and blue-yellow balances, colourfulness, greenery, lightness, saturation |
 
 Groups A-F run on a preprocessed luminance image. Group G reads colour directly and is
-off by default. `feature_guide_markdown` returns the guide shown in the image notebook
-as one Markdown page, generated from the same feature classes as the values.
+off by default. `feature_guide_markdown` returns every feature's words as one Markdown
+page, generated from the same feature classes as the values.
 
 ### Datasets
 
