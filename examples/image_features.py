@@ -27,13 +27,14 @@ PHOTOGRAPHS = {
     "Low cloud": "low_cloud.jpg",
 }
 
-# ANSI: erase the screen and return the cursor to the top left, then one style per part.
+# ANSI: erase the screen and return the cursor to the top left, then the colours.
 CLEAR_SCREEN = "\033[2J\033[H"
-HEADING = "\033[1;36m"  # bold cyan
-META = "\033[2m"  # dim
-INTUITION = "\033[1;32m"  # bold green
-TECHNICAL = "\033[1;33m"  # bold yellow
-REFERENCES = "\033[1;34m"  # bold blue
+BOLD = "\033[1m"
+DIM = "\033[2m"
+CYAN = "\033[36m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
 RESET = "\033[0m"
 
 here = Path(__file__).parent
@@ -67,20 +68,21 @@ while True:
     group = get_group(group_of(name))
 
     print(CLEAR_SCREEN, end="")
-    print(f"{HEADING}{index + 1}/{len(feature_names)}  {description.title}{RESET}")
-    print(f"{META}({name}) in group {group.letter}: {group.title}{RESET}")
-    print(f"{description.summary}\n")
+    print(f"{BOLD}{CYAN}{index + 1}/{len(feature_names)}  {description.title}{RESET}")
+    print(f"{DIM}({name}) in group {group.letter}: {group.title}{RESET}")
+    print(f"\n{description.summary}\n")
     for photo, row in measurements.items():
         print(f"  {photo:<10} {row[name]:>10.4f}")
-    print(f"\n{INTUITION}Intuition:{RESET}")
-    print(description.intuition)
-    print(f"\n{TECHNICAL}Technical:{RESET}")
-    print(description.technical)
+    print(f"\n{BOLD}{GREEN}Intuition{RESET}")
+    print(f"{GREEN}{description.intuition}{RESET}")
+    print(f"\n{BOLD}{YELLOW}Technical{RESET}")
+    print(f"{YELLOW}{description.technical}{RESET}")
     if description.references:
-        print(f"\n{REFERENCES}Further reading:{RESET}")
+        print(f"\n{BOLD}{BLUE}Further reading{RESET}")
         for reference in description.references:
-            print("  -", re.search(r"\((https?://[^)]+)\)", reference).group(1))
-    print(f"\n{META}n next, p previous, q quit:{RESET} ", end="", flush=True)
+            url = re.search(r"\((https?://[^)]+)\)", reference).group(1)
+            print(f"  - {BLUE}{url}{RESET}")
+    print(f"\n{DIM}n next, p previous, q quit:{RESET} ", end="", flush=True)
 
     key = read_key()
     if key in ("q", ""):
