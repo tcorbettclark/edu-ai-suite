@@ -48,10 +48,11 @@ def test_the_readme_names_every_script():
         assert f"examples/{name}.py" in readme, name
 
 
-def test_the_language_model_corpus_is_present():
-    path = EXAMPLES / "happy_prince.txt"
-    assert path.is_file()
-    assert len(path.read_text()) > 1_000
+def test_the_language_model_corpora_are_present():
+    for name in ("happy_prince.txt", "dorian_gray.txt", "tiny_stories.txt"):
+        path = EXAMPLES / name
+        assert path.is_file(), name
+        assert len(path.read_text()) > 1_000, name
 
 
 def test_the_maintainer_script_is_present():

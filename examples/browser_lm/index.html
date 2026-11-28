@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiny LSTM browser test</title>
+<style>
+  :root { color-scheme: light; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { margin: 0; background: #f4f5f7; color: #222; }
+  main { max-width: 1060px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: #666; margin: 0 0 20px; max-width: 70ch; }
+  .widget { background: #fff; border: 1px solid #d8dade; border-radius: 10px; padding: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 12px; }
+  label { font-size: .9rem; color: #444; }
+  textarea { width: 100%; min-height: 58px; box-sizing: border-box; font: inherit; padding: 8px; border: 1px solid #bbb; border-radius: 6px; }
+  button { font: inherit; padding: 7px 12px; border: 1px solid #1f6feb; border-radius: 6px; background: #1f6feb; color: #fff; cursor: pointer; }
+  button.secondary { background: #fff; color: #1f6feb; }
+  button[aria-pressed="true"] { background: #1f6feb; color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  output { display: block; white-space: pre-wrap; min-height: 3.2em; padding: 10px; background: #f8f9fb; border: 1px solid #e1e3e7; border-radius: 6px; font-family: ui-monospace, "SF Mono", Menlo, monospace; line-height: 1.5; }
+  .distTitle { font-size: .85rem; color: #555; margin: 14px 0 8px; }
+  .bars { display: grid; gap: 4px; }
+  .bar { display: grid; grid-template-columns: 9em 1fr 3.4em; gap: 8px; align-items: center; font-size: .82rem; cursor: pointer; }
+  .bar:hover .track { outline: 2px solid #c9d8ff; }
+  .bar .track { display: block; height: 14px; background: #eceef2; border-radius: 3px; overflow: hidden; }
+  .bar .fill { display: block; height: 100%; background: #7aa7ff; }
+  .bar .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar .pct { text-align: right; color: #555; }
+  svg.treemap { width: 100%; height: auto; display: block; border-radius: 6px; overflow: hidden; }
+  .meta { font-size: .8rem; color: #666; margin-top: 10px; }
+  .status { font-size: .85rem; color: #555; }
+  .loading { color: #666; }
+  .note { font-size: .8rem; color: #777; margin-top: 10px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Tiny LSTM browser test</h1>
+<p class="sub">A character-level and word-level model trained on <em id="corpusLabel">a public-domain book</em>. The distribution is the model’s next-token weighting; sample one token, undo, or click a candidate to force it.</p>
+
+<section class="widget">
+  <div class="row">
+    <label><input type="radio" name="model" value="char" checked> character</label>
+    <label><input type="radio" name="model" value="word"> word</label>
+    <label>checkpoint <input id="checkpoint" type="range" min="0" max="3" step="1" value="3"> <span id="checkpointLabel"></span></label>
+    <label>temperature <input id="temperature" type="range" min="0" max="1.5" step="0.05" value="0.7"> <span id="temperatureLabel">0.70</span></label>
+    <span>view</span>
+    <button id="barsView" class="secondary" aria-pressed="true">bars</button>
+    <button id="treemapView" class="secondary" aria-pressed="false">treemap</button>
+  </div>
+
+  <label for="prompt">Starting text</label>
+  <textarea id="prompt">the swallow</textarea>
+
+  <div class="row" style="margin-top:10px">
+    <button id="sample">Sample next</button>
+    <button id="undo" class="secondary">Undo</button>
+    <button id="reset" class="secondary">Reset</button>
+    <span id="status" class="loading">Loading models…</span>
+  </div>
+
+  <output id="text"></output>
+  <p id="distTitle" class="distTitle"></p>
+  <div id="view"></div>
+  <div id="meta" class="meta"></div>
+  <p class="note">The model is a tiny LSTM, not a transformer. It sees the last few tokens only, and `end` means it has chosen to stop.</p>
+</section>
+</main>
+<script src="lm.js"></script>
+<script>
+(() => {
+  const {
+    BOS_ID,
+    EOS_ID,
+    createModel,
+    decodeIds,
+    encodePrompt,
+    nextDistributionFromIds,
+    mulberry32,
+  } = BrowserLM;
+
+  const $ = (id) => document.getElementById(id);
+  const textEl = $("text");
+  const viewEl = $("view");
+  const distTitle = $("distTitle");
+  const metaEl = $("meta");
+  const statusEl = $("status");
+  const promptEl = $("prompt");
+
+  const CORPUS = new URLSearchParams(location.search).get("corpus") || "dorian_gray";
+  const DEFAULTS = {
+    dorian_gray: { char: "the port", word: "the portrait" },
+    happy_prince: { char: "the sw", word: "the swallow" },
+    tiny_stories: { char: "Once upon a", word: "Once upon a time" },
+  };
+  const defaults = DEFAULTS[CORPUS] || DEFAULTS.dorian_gray;
+
+  const state = {
+    models: {},
+    active: "char",
+    promptDirty: false,
+    checkpoint: 3,
+    temperature: 0.7,
+    view: "bars",
+    promptIds: [],
+    ids: [],
+    ended: false,
+    last: null,
+    seed: 1,
+    random: mulberry32(1),
+  };
+
+  const model = () => state.models[state.active];
+
+  function tokenLabel(token) {
+    if (token === " ") return "space";
+    if (token === "\n") return "newline";
+    if (token === "<eos>") return "end";
+    if (token === "<unk>") return "unknown";
+    return token;
+  }
+
+  function colorFor(token) {
+    let h = 0;
+    for (let i = 0; i < token.length; i++) h = (h * 31 + token.charCodeAt(i)) >>> 0;
+    return `hsl(${h % 360} 62% 84%)`;
+  }
+
+  /* Squarified treemap: area proportional to probability. */
+  function worstAspect(row, rowSum, remaining, side, other) {
+    const thickness = (rowSum / remaining) * other;
+    let worst = 0;
+    for (const item of row) {
+      const along = (item.p / rowSum) * side;
+      worst = Math.max(worst, thickness / along, along / thickness);
+    }
+    return worst;
+  }
+
+  function squarify(items, x, y, width, height) {
+    const sorted = items.slice().sort((a, b) => b.p - a.p);
+    const rects = [];
+    let rx = x, ry = y, rw = width, rh = height;
+    let index = 0;
+    let remaining = sorted.reduce((sum, item) => sum + item.p, 0);
+    while (index < sorted.length) {
+      const vertical = rw >= rh;
+      const side = vertical ? rh : rw;
+      const other = vertical ? rw : rh;
+      let row = [sorted[index]];
+      let rowSum = sorted[index].p;
+      let best = worstAspect(row, rowSum, remaining, side, other);
+      index++;
+      while (index < sorted.length) {
+        const candidate = worstAspect(
+          row.concat([sorted[index]]),
+          rowSum + sorted[index].p,
+          remaining,
+          side,
+          other
+        );
+        if (candidate > best) break;
+        row.push(sorted[index]);
+        rowSum += sorted[index].p;
+        best = candidate;
+        index++;
+      }
+      const fraction = rowSum / remaining;
+      remaining -= rowSum;
+      if (vertical) {
+        const stripWidth = fraction * rw;
+        let cy = ry;
+        for (const item of row) {
+          const heightItem = (item.p / rowSum) * rh;
+          rects.push({ item, x: rx, y: cy, w: stripWidth, h: heightItem });
+          cy += heightItem;
+        }
+        rx += stripWidth;
+        rw -= stripWidth;
+      } else {
+        const stripHeight = fraction * rh;
+        let cx = rx;
+        for (const item of row) {
+          const widthItem = (item.p / rowSum) * rw;
+          rects.push({ item, x: cx, y: ry, w: widthItem, h: stripHeight });
+          cx += widthItem;
+        }
+        ry += stripHeight;
+        rh -= stripHeight;
+      }
+    }
+    return rects;
+  }
+
+  function svgEl(tag, attrs) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const key in attrs) node.setAttribute(key, attrs[key]);
+    return node;
+  }
+
+  function renderBars(items) {
+    const bars = document.createElement("div");
+    bars.className = "bars";
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "bar";
+      row.title = `${tokenLabel(item.token)} — ${(item.p * 100).toFixed(2)}%`;
+      row.addEventListener("click", () => choose(item));
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = tokenLabel(item.token);
+      const track = document.createElement("span");
+      track.className = "track";
+      const fill = document.createElement("span");
+      fill.className = "fill";
+      fill.style.width = `${Math.max(0.5, item.p * 100)}%`;
+      fill.style.background = item.id === EOS_ID ? "#b8bcc4" : colorFor(item.token);
+      track.appendChild(fill);
+      const pct = document.createElement("span");
+      pct.className = "pct";
+      pct.textContent = `${(item.p * 100).toFixed(1)}%`;
+      row.append(label, track, pct);
+      bars.appendChild(row);
+    }
+    viewEl.replaceChildren(bars);
+  }
+
+  function renderTreemap(items) {
+    const shown = items.slice();
+    const total = items.reduce((sum, item) => sum + item.p, 0);
+    if (total < 0.999) {
+      shown.push({
+        id: null,
+        token: "everything else",
+        p: 1 - total,
+        residual: true,
+      });
+    }
+
+    const width = 900;
+    const height = 520;
+    const svg = svgEl("svg", {
+      class: "treemap",
+      viewBox: `0 0 ${width} ${height}`,
+      role: "img",
+      "aria-label": "Next-token probability treemap",
+    });
+    for (const rect of squarify(shown, 0, 0, width, height)) {
+      const item = rect.item;
+      const group = svgEl("g", { class: "cell" });
+      if (!item.residual) group.style.cursor = "pointer";
+      group.addEventListener("click", () => choose(item));
+
+      const fill =
+        item.residual ? "#e9eaec" : item.id === EOS_ID ? "#c8ccd4" : colorFor(item.token);
+      const shape = svgEl("rect", {
+        x: rect.x,
+        y: rect.y,
+        width: rect.w,
+        height: rect.h,
+        fill,
+        stroke: "#fff",
+        "stroke-width": 2,
+      });
+      group.appendChild(shape);
+
+      const label = item.residual ? "other" : tokenLabel(item.token);
+      const fontSize = Math.min(rect.h * 0.32, rect.w / (label.length * 0.62 + 1), 24);
+      if (fontSize >= 10) {
+        const text = svgEl("text", {
+          x: rect.x + rect.w / 2,
+          y: rect.y + rect.h / 2 + fontSize * 0.35,
+          "text-anchor": "middle",
+          "font-size": fontSize,
+          fill: "#222",
+          "pointer-events": "none",
+        });
+        text.textContent = label;
+        group.appendChild(text);
+      }
+      const title = svgEl("title", {});
+      title.textContent = `${label} — ${(item.p * 100).toFixed(1)}%`;
+      group.appendChild(title);
+      svg.appendChild(group);
+    }
+    viewEl.replaceChildren(svg);
+  }
+
+  function renderDistribution() {
+    if (!model()) return;
+    if (state.ended) {
+      distTitle.textContent = "The model chose to end. Undo to continue.";
+      viewEl.replaceChildren();
+      return;
+    }
+    const items = nextDistributionFromIds(
+      model(),
+      state.checkpoint,
+      state.ids,
+      { temperature: state.temperature, topK: 12 }
+    );
+    distTitle.textContent = state.view === "bars"
+      ? "Next-token weighting (click a bar to force it):"
+      : "Next-token weighting (click a tile to force it):";
+    if (state.view === "treemap") renderTreemap(items);
+    else renderBars(items);
+  }
+
+  function renderMeta() {
+    if (!model()) return;
+    const snapshot = model().checkpoints[state.checkpoint];
+    const generated = state.ids.length - state.promptIds.length;
+    const loss = snapshot.val_loss == null ? "random" : `val loss ${snapshot.val_loss.toFixed(2)}`;
+    metaEl.textContent = `${state.active}: ${model().tokenizer.tokens.length} tokens, `
+      + `${model().architecture.context_width}-token context · epoch ${snapshot.epoch} (${loss}) · `
+      + `${Math.max(0, generated)} generated`;
+  }
+
+  function renderStatus() {
+    if (state.ended) {
+      statusEl.textContent = "end";
+    } else if (state.last) {
+      statusEl.textContent = `${state.last.chosen ? "chose" : "sampled"} `
+        + `“${tokenLabel(state.last.token)}” (${(state.last.p * 100).toFixed(1)}%)`;
+    } else {
+      statusEl.textContent = "Click Sample next";
+    }
+    $("undo").disabled = state.ids.length <= state.promptIds.length && !state.ended;
+  }
+
+  function render() {
+    textEl.textContent = model() ? decodeIds(model(), state.ids) : "";
+    renderDistribution();
+    renderMeta();
+    renderStatus();
+  }
+
+  function choose(item) {
+    if (state.ended || !item || item.residual || item.id == null) return;
+    append(item.id, item.token, item.p, true);
+  }
+
+  function append(id, token, p, chosen) {
+    if (id === BOS_ID) return;
+    state.ids.push(id);
+    state.last = { token, p, chosen };
+    state.ended = id === EOS_ID;
+    render();
+  }
+
+  function sampleNext() {
+    if (!model() || state.ended) return;
+    const items = nextDistributionFromIds(
+      model(),
+      state.checkpoint,
+      state.ids,
+      { temperature: state.temperature, topK: Infinity }
+    );
+    let target = state.random();
+    let picked = items[items.length - 1];
+    for (const item of items) {
+      target -= item.p;
+      if (target <= 0) { picked = item; break; }
+    }
+    append(picked.id, picked.token, picked.p, false);
+  }
+
+  function undo() {
+    if (state.ids.length > state.promptIds.length) state.ids.pop();
+    else if (state.ended) state.ids.pop();
+    state.ended = false;
+    state.last = null;
+    render();
+  }
+
+  function resetFromPrompt(newSeed) {
+    if (!model()) return;
+    state.promptIds = encodePrompt(model(), promptEl.value);
+    state.ids = state.promptIds.slice();
+    state.ended = false;
+    state.last = null;
+    if (newSeed) {
+      state.seed = Math.floor(Math.random() * 1e9);
+      state.random = mulberry32(state.seed);
+    }
+    render();
+  }
+
+  $("sample").addEventListener("click", sampleNext);
+  $("undo").addEventListener("click", undo);
+  $("reset").addEventListener("click", () => resetFromPrompt(true));
+  $("checkpoint").addEventListener("input", (event) => {
+    state.checkpoint = Number(event.target.value);
+    render();
+  });
+  $("temperature").addEventListener("input", (event) => {
+    state.temperature = Number(event.target.value);
+    $("temperatureLabel").textContent = state.temperature.toFixed(2);
+    render();
+  });
+  $("barsView").addEventListener("click", () => {
+    state.view = "bars";
+    $("barsView").setAttribute("aria-pressed", "true");
+    $("treemapView").setAttribute("aria-pressed", "false");
+    renderDistribution();
+  });
+  $("treemapView").addEventListener("click", () => {
+    state.view = "treemap";
+    $("barsView").setAttribute("aria-pressed", "false");
+    $("treemapView").setAttribute("aria-pressed", "true");
+    renderDistribution();
+  });
+  document.querySelectorAll("input[name='model']").forEach((radio) => {
+    radio.addEventListener("change", (event) => {
+      state.active = event.target.value;
+      state.checkpoint = Math.min(
+        state.checkpoint,
+        model().checkpoints.length - 1
+      );
+      $("checkpoint").max = model().checkpoints.length - 1;
+      $("checkpoint").value = state.checkpoint;
+      if (!state.promptDirty) promptEl.value = defaults[state.active];
+      resetFromPrompt(false);
+    });
+  });
+
+  let promptTimer = 0;
+  promptEl.addEventListener("input", () => {
+    state.promptDirty = true;
+    clearTimeout(promptTimer);
+    promptTimer = setTimeout(() => resetFromPrompt(false), 200);
+  });
+
+  Promise.all([
+    fetch(`out/${CORPUS}/char.compact.json`).then((response) => response.json()),
+    fetch(`out/${CORPUS}/word.compact.json`).then((response) => response.json()),
+  ])
+    .then(([char, word]) => {
+      state.models.char = createModel(char);
+      state.models.word = createModel(word);
+      $("corpusLabel").textContent = char.corpus?.title || CORPUS;
+      promptEl.value = defaults[state.active];
+      resetFromPrompt(false);
+    })
+    .catch((error) => {
+      statusEl.textContent = `Could not load models: ${error.message}`;
+    });
+})();
+</script>
+</body>
+</html>
